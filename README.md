@@ -1,0 +1,2 @@
+# tradeyatra
+TradeYatra trading journal
