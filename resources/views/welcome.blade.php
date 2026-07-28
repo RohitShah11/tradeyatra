@@ -183,15 +183,46 @@
         .broker-node-status:before { content:""; width:6px; height:6px; border-radius:50%; background:var(--green); }
         .broker-node.shark { --node-color:#13bdd0; --node-dark:#087c99; }
         .broker-node.delta { --node-color:#ff7a1a; --node-dark:#d74606; }
-        .journal-hub { position:relative; z-index:2; width:100px; height:100px; justify-self:center; border:1px solid rgba(255,122,26,.32); border-radius:50%; background:conic-gradient(from 35deg,rgba(255,122,26,.2),rgba(3,16,24,.94) 24%,rgba(24,199,255,.22) 48%,rgba(3,16,24,.94) 72%,rgba(255,122,26,.2)); box-shadow:0 0 0 7px rgba(24,199,255,.03),0 0 0 14px rgba(255,122,26,.018),-12px 18px 48px rgba(24,199,255,.14),12px 18px 48px rgba(255,122,26,.14); }
-        .journal-hub:before { content:""; position:absolute; inset:7px; border-radius:50%; background:repeating-conic-gradient(from 12deg,rgba(24,199,255,.88) 0 1deg,transparent 1deg 9deg,rgba(255,122,26,.88) 9deg 10deg,transparent 10deg 18deg),repeating-radial-gradient(circle,transparent 0 9px,rgba(24,199,255,.18) 10px 11px,transparent 12px 18px,rgba(255,122,26,.16) 19px 20px,transparent 21px 27px); -webkit-mask:radial-gradient(circle,transparent 0 24%,#000 26% 100%); mask:radial-gradient(circle,transparent 0 24%,#000 26% 100%); animation:matrixSpin 18s linear infinite; opacity:.92; }
-        .journal-hub:after { content:""; position:absolute; inset:-9px; border:1px solid rgba(24,199,255,.19); border-radius:50%; box-shadow:inset 0 0 0 1px rgba(255,122,26,.08); animation:hubPulse 2.6s ease-out infinite; }
-        .hub-core { position:absolute; z-index:3; inset:50% auto auto 50%; width:50px; height:50px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.17); border-radius:50%; background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.09),transparent 30%),linear-gradient(145deg,#102831,#07141a); box-shadow:-7px 0 20px rgba(24,199,255,.28),7px 0 20px rgba(255,122,26,.25),inset 0 1px 0 rgba(255,255,255,.12); transform:translate(-50%,-50%); }
-        .hub-core img { display:block; width:34px; height:34px; object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.32)); }
-        .hub-orbit { position:absolute; z-index:4; width:6px; height:6px; border:1px solid rgba(255,255,255,.55); border-radius:50%; background:var(--orbit-color); box-shadow:0 0 12px var(--orbit-color); }
-        .hub-orbit.one { --orbit-color:#18c7ff; left:8px; top:45px; animation:orbitOne 5s ease-in-out infinite; }
-        .hub-orbit.two { --orbit-color:#ff7a1a; right:14px; top:17px; animation:orbitTwo 6s ease-in-out infinite; }
-        .hub-orbit.three { --orbit-color:#ff9a47; right:12px; bottom:18px; animation:orbitThree 4.5s ease-in-out infinite; }
+        .journal-hub { position:relative; z-index:2; width:104px; height:104px; justify-self:center; display:grid; place-items:center; border-radius:50%; background:transparent; filter:drop-shadow(-9px 3px 13px rgba(24,199,255,.16)) drop-shadow(9px 3px 13px rgba(255,122,26,.14)); }
+        .journal-hub:before { content:none; }
+        .journal-hub:after { content:none; }
+        .earth-globe { position:relative; z-index:3; width:82px; height:82px; overflow:hidden; border:0; border-radius:50%; background:linear-gradient(90deg,#075063 0%,#082a34 43%,#2f2117 57%,#71330c 100%); box-shadow:-9px 0 19px rgba(24,199,255,.32),9px 0 19px rgba(255,122,26,.28),inset 18px 0 26px rgba(24,199,255,.25),inset -18px 0 26px rgba(255,122,26,.22); }
+        .earth-globe:before { content:""; position:absolute; z-index:4; inset:0; border-radius:50%; background:radial-gradient(circle at 29% 24%,rgba(255,255,255,.28),transparent 9%),radial-gradient(circle at 34% 30%,transparent 0 32%,rgba(0,0,0,.08) 55%,rgba(0,0,0,.62) 100%); pointer-events:none; }
+        .earth-globe svg { display:block; width:100%; height:100%; }
+        .earth-grid { animation:earthRotate 8s linear infinite; transform-box:fill-box; transform-origin:center; }
+        .earth-grid path,.earth-grid ellipse { fill:none; stroke:url(#earthLine); stroke-width:.7; opacity:.55; }
+        .earth-land { fill:url(#landFill); stroke:rgba(255,255,255,.28); stroke-width:.45; animation:landDrift 12s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+        .earth-energy path { fill:none; stroke-linecap:round; stroke-linejoin:round; }
+        .earth-energy .cyan-bolt { stroke:#7ff5ff; filter:drop-shadow(0 0 3px #18c7ff); animation:cyanLightning 2.1s steps(2,end) infinite; }
+        .earth-energy .orange-bolt { stroke:#ffd09a; filter:drop-shadow(0 0 3px #ff7a1a); animation:orangeLightning 2.35s steps(2,end) infinite .35s; }
+        .earth-energy circle { animation:energySpark 1.5s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+        .earth-axis { position:absolute; z-index:5; left:50%; top:-8px; width:1px; height:92px; background:linear-gradient(transparent,rgba(255,255,255,.22),transparent); transform:rotate(17deg); }
+        .earth-signal { position:absolute; z-index:6; top:50%; width:7px; height:7px; margin-top:-3px; border:1px solid rgba(255,255,255,.7); border-radius:50%; }
+        .earth-signal.cyan { left:-2px; background:#18c7ff; box-shadow:0 0 13px #18c7ff; animation:signalCyan 2.4s ease-in-out infinite; }
+        .earth-signal.orange { right:-2px; background:#ff7a1a; box-shadow:0 0 13px #ff7a1a; animation:signalOrange 2.4s ease-in-out infinite .7s; }
+        .energy-field { position:absolute; inset:0; overflow:hidden; border-radius:50%; background:radial-gradient(circle at 24% 50%,rgba(24,199,255,.34),transparent 43%),radial-gradient(circle at 76% 50%,rgba(255,122,26,.34),transparent 43%),radial-gradient(circle at 50% 50%,rgba(255,255,255,.09),transparent 22%); }
+        .energy-field:before,.energy-field:after { content:""; position:absolute; top:8%; bottom:8%; width:48%; opacity:.78; }
+        .energy-field:before { left:0; background:linear-gradient(90deg,rgba(24,199,255,.38),transparent); clip-path:polygon(0 16%,60% 0,100% 18%,72% 37%,100% 55%,66% 72%,84% 100%,0 82%); }
+        .energy-field:after { right:0; background:linear-gradient(270deg,rgba(255,122,26,.4),transparent); clip-path:polygon(100% 16%,40% 0,0 18%,28% 37%,0 55%,34% 72%,16% 100%,100% 82%); }
+        .energy-core { position:absolute; z-index:2; left:50%; top:50%; width:18px; height:18px; border-radius:50%; background:linear-gradient(90deg,#18c7ff,#ff7a1a); box-shadow:-8px 0 18px rgba(24,199,255,.68),8px 0 18px rgba(255,122,26,.62); transform:translate(-50%,-50%); animation:coreBreathe 2.2s ease-in-out infinite; }
+        .energy-dot { position:absolute; z-index:3; width:4px; height:4px; border-radius:50%; background:var(--dot-color); box-shadow:0 0 8px var(--dot-color); opacity:0; }
+        .energy-dot.cyan { --dot-color:#7ff6ff; left:8%; }
+        .energy-dot.orange { --dot-color:#ffb05d; right:8%; }
+        .energy-dot.one { top:24%; animation:cyanDotOne 2.7s ease-in-out infinite; }
+        .energy-dot.two { top:48%; animation:cyanDotTwo 2.2s ease-in-out infinite .45s; }
+        .energy-dot.three { top:70%; animation:cyanDotThree 3s ease-in-out infinite .9s; }
+        .energy-dot.orange.one { animation:orangeDotOne 2.7s ease-in-out infinite .25s; }
+        .energy-dot.orange.two { animation:orangeDotTwo 2.2s ease-in-out infinite .7s; }
+        .energy-dot.orange.three { animation:orangeDotThree 3s ease-in-out infinite 1.1s; }
+        .float-dot { position:absolute; z-index:4; width:var(--size); height:var(--size); border-radius:50%; background:var(--color); box-shadow:0 0 calc(var(--size) * 2.5) var(--color); opacity:.8; animation:particleFloat var(--speed) ease-in-out infinite alternate; animation-delay:var(--delay); }
+        .float-dot.c1 { --size:4px; --color:#91f7ff; --speed:2.6s; --delay:-.4s; left:16%; top:20%; }
+        .float-dot.c2 { --size:3px; --color:#18c7ff; --speed:3.1s; --delay:-1.7s; left:27%; top:42%; }
+        .float-dot.c3 { --size:5px; --color:#58e9f5; --speed:3.6s; --delay:-2.1s; left:12%; top:65%; }
+        .float-dot.c4 { --size:2px; --color:#b7fbff; --speed:2.3s; --delay:-1s; left:36%; top:75%; }
+        .float-dot.o1 { --size:4px; --color:#ffc079; --speed:2.8s; --delay:-1.3s; right:15%; top:18%; }
+        .float-dot.o2 { --size:3px; --color:#ff7a1a; --speed:3.4s; --delay:-.6s; right:29%; top:39%; }
+        .float-dot.o3 { --size:5px; --color:#ff9c48; --speed:3.8s; --delay:-2.5s; right:12%; top:66%; }
+        .float-dot.o4 { --size:2px; --color:#ffe0b8; --speed:2.5s; --delay:-1.8s; right:36%; top:77%; }
         .sync-caption { position:relative; z-index:1; margin:-2px 0 18px; color:var(--muted); font-size:10px; text-align:center; }
         .live-metrics { position:relative; z-index:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
         .live-metric { position:relative; overflow:hidden; min-width:0; padding:13px; border:1px solid rgba(255,255,255,.085); border-radius:11px; background:linear-gradient(145deg,rgba(3,14,20,.74),rgba(15,35,41,.48)); transition:transform .22s ease,border-color .22s ease; }
@@ -224,11 +255,22 @@
         @keyframes syncSheen { 0%,20% { transform:translateX(-100%); } 65%,100% { transform:translateX(100%); } }
         @keyframes dataFlow { to { background-position:-200% 0; } }
         @keyframes nodeFloat { 50% { transform:translateY(-4px); } }
-        @keyframes hubPulse { 0% { opacity:.8; transform:scale(.92); } 80%,100% { opacity:0; transform:scale(1.18); } }
-        @keyframes matrixSpin { to { transform:rotate(360deg); } }
-        @keyframes orbitOne { 50% { transform:translate(68px,-25px) scale(.7); } }
-        @keyframes orbitTwo { 50% { transform:translate(-60px,67px) scale(1.2); } }
-        @keyframes orbitThree { 50% { transform:translate(-67px,-48px) scale(.8); } }
+        @keyframes earthRotate { to { transform:rotateY(360deg); } }
+        @keyframes landDrift { 50% { transform:translateX(4px) scale(.98); } }
+        @keyframes signalCyan { 50% { transform:translateX(10px) scale(.65); opacity:.55; } }
+        @keyframes signalOrange { 50% { transform:translateX(-10px) scale(.65); opacity:.55; } }
+        @keyframes sparkField { 50% { opacity:.35; transform:scale(1.08); } }
+        @keyframes cyanLightning { 0%,38%,46%,100% { opacity:.2; } 40%,44% { opacity:1; stroke-width:2.2; } }
+        @keyframes orangeLightning { 0%,57%,65%,100% { opacity:.18; } 59%,63% { opacity:1; stroke-width:2.2; } }
+        @keyframes energySpark { 50% { opacity:.22; transform:scale(.45); } }
+        @keyframes coreBreathe { 50% { transform:translate(-50%,-50%) scale(.75); filter:brightness(1.35); } }
+        @keyframes cyanDotOne { 0% { opacity:0; transform:translate(0,0); } 20% { opacity:1; } 75% { opacity:.9; } 100% { opacity:0; transform:translate(33px,17px) scale(.6); } }
+        @keyframes cyanDotTwo { 0% { opacity:0; transform:translate(0,0); } 18% { opacity:1; } 100% { opacity:0; transform:translate(34px,1px) scale(.55); } }
+        @keyframes cyanDotThree { 0% { opacity:0; transform:translate(0,0); } 20% { opacity:1; } 100% { opacity:0; transform:translate(32px,-16px) scale(.6); } }
+        @keyframes orangeDotOne { 0% { opacity:0; transform:translate(0,0); } 20% { opacity:1; } 75% { opacity:.9; } 100% { opacity:0; transform:translate(-33px,17px) scale(.6); } }
+        @keyframes orangeDotTwo { 0% { opacity:0; transform:translate(0,0); } 18% { opacity:1; } 100% { opacity:0; transform:translate(-34px,1px) scale(.55); } }
+        @keyframes orangeDotThree { 0% { opacity:0; transform:translate(0,0); } 20% { opacity:1; } 100% { opacity:0; transform:translate(-32px,-16px) scale(.6); } }
+        @keyframes particleFloat { 0% { transform:translate(-2px,-4px) scale(.75); opacity:.42; } 55% { opacity:1; } 100% { transform:translate(5px,7px) scale(1.16); opacity:.72; } }
         .chart {
             height: 248px;
             padding: 26px 18px 18px;
@@ -648,8 +690,8 @@
             .broker-workflow { grid-template-columns:1fr; }
             .sync-network { grid-template-columns:minmax(0,1fr); justify-items:stretch; }
             .broker-node:after { display:none; }
-            .journal-hub { width:88px; height:88px; }
-            .hub-core { width:43px; height:43px; }
+            .journal-hub { width:90px; height:90px; }
+            .earth-globe { width:66px; height:66px; }
             .sync-visual { padding:18px; }
             .live-metrics { grid-template-columns:minmax(0,1fr); }
             .product-grid { grid-template-columns:1fr; }
@@ -667,7 +709,7 @@
             .dashboard-showcase.reveal-enabled .dashboard-preview-caption { opacity:1; transform:none; transition:none; }
             .dashboard-preview-card:hover { transform:none; }
             .terminal,.terminal:hover { transform:none; }
-            .terminal-live:before,.sync-visual:after,.broker-node,.broker-node:after,.journal-hub:before,.journal-hub:after,.hub-orbit { animation:none; }
+            .terminal-live:before,.sync-visual:after,.broker-node,.broker-node:after,.energy-core,.energy-dot,.float-dot { animation:none; }
         }
     </style>
     @livewireStyles
@@ -705,9 +747,25 @@
                                 <div class="broker-node-head"><span class="broker-node-mark">S</span><div><strong>Shark Exchange</strong><small>INR derivatives</small></div></div>
                                 <span class="broker-node-status">Trade history connected</span>
                             </div>
-                            <div class="journal-hub" aria-label="TradeYatra unified data matrix">
-                                <span class="hub-core"><img src="{{ asset('images/branding/tradeyatra-icon-v2.png') }}" alt=""></span>
-                                <i class="hub-orbit one"></i><i class="hub-orbit two"></i><i class="hub-orbit three"></i>
+                            <div class="journal-hub" aria-label="Shark and Delta data flowing through a rotating TradeYatra globe">
+                                <span class="earth-globe" aria-hidden="true">
+                                    <i class="energy-field"></i>
+                                    <i class="energy-core"></i>
+                                    <i class="energy-dot cyan one"></i>
+                                    <i class="energy-dot cyan two"></i>
+                                    <i class="energy-dot cyan three"></i>
+                                    <i class="energy-dot orange one"></i>
+                                    <i class="energy-dot orange two"></i>
+                                    <i class="energy-dot orange three"></i>
+                                    <i class="float-dot c1"></i>
+                                    <i class="float-dot c2"></i>
+                                    <i class="float-dot c3"></i>
+                                    <i class="float-dot c4"></i>
+                                    <i class="float-dot o1"></i>
+                                    <i class="float-dot o2"></i>
+                                    <i class="float-dot o3"></i>
+                                    <i class="float-dot o4"></i>
+                                </span>
                             </div>
                             <div class="broker-node delta">
                                 <div class="broker-node-head"><span class="broker-node-mark">D</span><div><strong>Delta India</strong><small>Perpetual futures</small></div></div>
@@ -1022,9 +1080,9 @@
                     <span class="eyebrow"><span class="pulse"></span> Contact us</span>
                     <h2>How can we help?</h2>
                     <p>Questions about TradeYatra, connecting an exchange, or your account? Send us a message and include enough detail for us to point you in the right direction.</p>
-                    <a class="contact-email" href="mailto:slwithrohit@gmail.com" aria-label="Email TradeYatra support at slwithrohit@gmail.com">
+                    <a class="contact-email" href="mailto:tradeyatra3@gmail.com" aria-label="Email TradeYatra support at tradeyatra3@gmail.com">
                         <span aria-hidden="true">✉</span>
-                        <span>slwithrohit@gmail.com</span>
+                        <span>tradeyatra3@gmail.com</span>
                     </a>
                     <div class="contact-note">For your security, never include passwords, API secrets, recovery codes, or private keys in this form.</div>
                 </div>
@@ -1095,7 +1153,7 @@
                 'name' => 'TradeYatra',
                 'url' => route('home'),
                 'logo' => asset('images/branding/tradeyatra-icon-v2.png'),
-                'email' => 'slwithrohit@gmail.com',
+                'email' => 'tradeyatra3@gmail.com',
             ],
             [
                 '@type' => 'WebSite',
