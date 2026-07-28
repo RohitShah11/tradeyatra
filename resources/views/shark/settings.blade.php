@@ -1,0 +1,216 @@
+@extends('layouts.app')
+
+@section('page_title', 'Shark API Settings')
+@section('page_subtitle', 'Securely connect Shark Exchange and control how your journal imports trades.')
+
+@section('content')
+@php
+    $isConnected = $account->exists && filled($account->api_key) && filled($account->api_secret);
+    $successfulSyncs = $logs->where('status', 'success')->count();
+    $latestLog = $logs->first();
+@endphp
+
+<style>
+    .settings-page { display:grid; gap:16px; }
+    .connection-hero { position:relative; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:22px; align-items:center; padding:23px; border:1px solid rgba(0,184,217,.24); border-radius:18px; background:linear-gradient(135deg,rgba(0,184,217,.13),rgba(8,126,154,.055) 60%,rgba(255,122,26,.035)); }
+    .connection-hero:after { content:""; position:absolute; width:250px; height:250px; right:-100px; top:-160px; border:1px solid rgba(0,184,217,.18); border-radius:50%; box-shadow:0 0 0 38px rgba(0,184,217,.025); pointer-events:none; }
+    .connection-brand { display:flex; align-items:center; gap:14px; }
+    .shark-mark { width:52px; height:52px; border-radius:15px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#00b8d9,#087e9a); box-shadow:0 14px 36px rgba(0,184,217,.2); font-size:19px; font-weight:900; }
+    .connection-brand h2 { margin:0 0 3px; font-size:23px; }
+    .connection-brand p { margin:0; color:var(--muted); }
+    .connection-state { position:relative; z-index:1; min-width:190px; padding:12px 14px; border:1px solid var(--line); border-radius:13px; background:rgba(5,14,18,.38); text-align:right; }
+    .state-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border-radius:999px; color:var(--good); background:rgba(52,211,153,.09); font-size:10px; font-weight:900; }
+    .state-badge:before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
+    .state-badge.offline { color:var(--warn); background:rgba(251,191,36,.09); }
+    .connection-state small { display:block; color:var(--muted); margin-top:7px; font-size:10px; }
+    .settings-layout { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(300px,.55fr); gap:16px; align-items:start; min-width:0; }
+    .api-guide { padding:20px; border:1px solid rgba(0,184,217,.19); border-radius:17px; background:var(--panel-bg); }
+    .guide-launch { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px 16px; border:1px solid rgba(0,184,217,.18); border-radius:14px; background:linear-gradient(135deg,rgba(0,184,217,.075),rgba(255,255,255,.02)); }
+    .guide-launch strong,.guide-launch small { display:block; }
+    .guide-launch small { color:var(--muted); margin-top:2px; }
+    .guide-dialog { width:min(980px,calc(100vw - 32px)); max-height:min(88vh,860px); padding:0; border:1px solid rgba(0,184,217,.25); border-radius:18px; color:var(--ink); background:#0b171c; box-shadow:0 32px 100px rgba(0,0,0,.58); overflow:hidden; }
+    .guide-dialog::backdrop { background:rgba(2,7,10,.78); backdrop-filter:blur(7px); }
+    .guide-dialog-shell { max-height:88vh; overflow-y:auto; padding:22px; }
+    .guide-dialog-top { position:sticky; top:-22px; z-index:5; display:flex; justify-content:space-between; align-items:center; gap:16px; margin:-22px -22px 18px; padding:17px 22px; border-bottom:1px solid var(--line); background:rgba(11,23,28,.96); backdrop-filter:blur(16px); }
+    .guide-dialog-top h2 { margin:0 0 2px; }
+    .guide-dialog-top p { margin:0; color:var(--muted); font-size:11px; }
+    .dialog-close { width:38px; height:38px; flex:0 0 38px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.05); font-size:20px; cursor:pointer; }
+    .guide-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:17px; }
+    .guide-head h2 { margin:0 0 4px; }
+    .guide-head p { margin:0; color:var(--muted); }
+    .guide-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .guide-step { position:relative; min-height:145px; padding:14px; border:1px solid var(--line); border-radius:13px; background:rgba(255,255,255,.025); }
+    .guide-step-number { width:26px; height:26px; margin-bottom:11px; border-radius:8px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#00b8d9,#087e9a); font-size:9px; font-weight:900; }
+    .guide-step h3 { margin:0 0 6px; font-size:13px; }
+    .guide-step p { margin:0; color:var(--muted); font-size:10px; }
+    .guide-step strong { color:var(--ink); }
+    .guide-warning { display:flex; gap:9px; align-items:flex-start; margin-top:12px; padding:11px 12px; border:1px solid rgba(255,122,26,.18); border-radius:11px; color:var(--muted); background:rgba(255,122,26,.05); font-size:10px; }
+    .guide-warning b { color:#ff9a47; }
+    .guide-help { margin-top:12px; border:1px solid var(--line); border-radius:11px; overflow:hidden; }
+    .guide-help summary { padding:11px 13px; color:var(--ink); background:rgba(255,255,255,.025); font-size:11px; font-weight:900; cursor:pointer; }
+    .guide-help-content { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:13px; color:var(--muted); font-size:10px; }
+    .guide-help-content strong { display:block; color:var(--ink); margin-bottom:3px; }
+    .settings-form { padding:0; overflow:hidden; }
+    .form-section { padding:20px; border-bottom:1px solid var(--line); }
+    .form-section:last-child { border-bottom:0; }
+    .section-heading { display:flex; gap:11px; align-items:flex-start; margin-bottom:16px; }
+    .section-number { width:28px; height:28px; flex:0 0 28px; border-radius:8px; display:grid; place-items:center; color:#72ddf1; background:rgba(0,184,217,.1); font-size:10px; font-weight:900; }
+    .section-heading h2 { margin:0 0 2px; font-size:16px; }
+    .section-heading p { margin:0; color:var(--muted); font-size:11px; }
+    .settings-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+    .field-wide { grid-column:1/-1; }
+    .field-note { color:var(--muted); font-size:10px; margin-top:5px; }
+    .secret-wrap { position:relative; }
+    .secret-wrap input { padding-right:76px; }
+    .secret-toggle { position:absolute; right:6px; top:6px; min-height:28px; border:0; border-radius:7px; padding:0 8px; color:#72ddf1; background:rgba(0,184,217,.09); font-size:9px; font-weight:900; cursor:pointer; }
+    .sync-toggle { display:flex; gap:12px; align-items:flex-start; padding:13px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); cursor:pointer; }
+    .sync-toggle input { width:18px; min-height:18px; margin-top:1px; accent-color:#00b8d9; }
+    .sync-toggle strong,.sync-toggle small { display:block; }
+    .sync-toggle small { color:var(--muted); margin-top:3px; }
+    .form-actions { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
+    .settings-aside { display:grid; gap:12px; min-width:0; }
+    .aside-card { min-width:0; padding:17px; border:1px solid var(--line); border-radius:15px; background:var(--panel-bg); overflow:hidden; }
+    .aside-card h3 { margin:0 0 6px; font-size:14px; }
+    .aside-card p { margin:0; color:var(--muted); font-size:11px; }
+    .ip-box { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; margin-top:12px; min-width:0; align-items:stretch; }
+    .ip-box code { min-width:0; padding:10px; border:1px solid rgba(0,184,217,.18); border-radius:9px; color:#72ddf1; background:rgba(0,184,217,.06); font:800 11px/1.45 ui-monospace,monospace; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
+    .copy-button { min-width:max-content; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:rgba(255,255,255,.05); padding:0 10px; font-size:10px; font-weight:900; cursor:pointer; }
+    .ip-label { display:block; margin-top:12px; color:var(--ink); font-size:10px; font-weight:900; }
+    .ip-status { display:inline-flex; margin-left:5px; padding:2px 5px; border-radius:999px; color:var(--good); background:rgba(52,211,153,.09); font-size:8px; }
+    .ip-empty { margin-top:12px; padding:10px; border:1px dashed var(--line); border-radius:9px; color:var(--muted); font-size:10px; }
+    .ip-whitelist-panel { min-width:0; padding:20px; border:1px solid rgba(0,184,217,.2); border-radius:15px; background:linear-gradient(135deg,rgba(0,184,217,.065),rgba(255,255,255,.02)); overflow:hidden; }
+    .ip-whitelist-head h2 { margin:0 0 4px; font-size:16px; }
+    .ip-whitelist-head p { margin:0; color:var(--muted); font-size:11px; }
+    .ip-address-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:15px; }
+    .ip-address-item { min-width:0; }
+    .setup-list { display:grid; gap:10px; margin-top:13px; }
+    .setup-step { display:grid; grid-template-columns:23px 1fr; gap:8px; align-items:start; color:var(--muted); font-size:11px; }
+    .setup-step b { width:23px; height:23px; border-radius:7px; display:grid; place-items:center; color:#72ddf1; background:rgba(0,184,217,.09); font-size:9px; }
+    .security-card { border-color:rgba(255,122,26,.18); background:linear-gradient(145deg,rgba(255,122,26,.06),rgba(255,255,255,.02)); }
+    .security-list { display:grid; gap:7px; margin-top:11px; color:var(--muted); font-size:10px; }
+    .security-list span:before { content:"✓"; color:#00e6a8; font-weight:900; margin-right:7px; }
+    .logs-panel { padding:18px; }
+    .logs-head { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; margin-bottom:13px; }
+    .logs-head h2 { margin:0 0 3px; }
+    .logs-summary { display:flex; gap:6px; }
+    .log-count { padding:5px 8px; border-radius:999px; color:var(--muted); background:var(--soft); font-size:9px; font-weight:900; }
+    .status-dot { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:900; text-transform:capitalize; }
+    .status-dot:before { content:""; width:6px; height:6px; border-radius:50%; background:var(--bad); }
+    .status-dot.success { color:var(--good); }
+    .status-dot.success:before { background:var(--good); }
+    @media(max-width:1080px){ .settings-layout{grid-template-columns:1fr;} .settings-aside{grid-template-columns:repeat(2,minmax(0,1fr));} .guide-grid{grid-template-columns:repeat(2,1fr);} }
+    @media(max-width:700px){ .connection-hero{grid-template-columns:1fr;} .connection-state{text-align:left;} .settings-fields,.settings-aside,.guide-grid,.guide-help-content,.ip-address-grid{grid-template-columns:minmax(0,1fr);} .field-wide{grid-column:1;} .guide-head{flex-direction:column;} }
+    @media(max-width:420px){ .ip-box{grid-template-columns:minmax(0,1fr);} .copy-button{min-height:36px;width:100%;} }
+</style>
+
+<div class="settings-page">
+    <section class="connection-hero">
+        <div class="connection-brand">
+            <span class="shark-mark">S</span>
+            <div><h2>Shark Exchange connection</h2><p>Import trades securely using your read-only API credentials.</p></div>
+        </div>
+        <div class="connection-state">
+            <span class="state-badge {{ $isConnected ? '' : 'offline' }}">{{ $isConnected ? 'Connected' : 'Setup required' }}</span>
+            <small>{{ $account->last_synced_at ? 'Last synced '.$account->last_synced_at->diffForHumans() : 'No successful sync recorded' }}</small>
+        </div>
+    </section>
+
+    <a class="table-link" href="{{ route('broker.guide') }}#shark-guide" target="_blank" rel="noopener">View the complete Shark connection guide →</a>
+
+    <section class="ip-whitelist-panel">
+        <div class="ip-whitelist-head"><h2>Server IP whitelist</h2><p>Before connecting, copy these TradeYatra server addresses into your broker API key's IP whitelist. Do not use your home or phone IP.</p></div>
+        <div class="ip-address-grid">
+            <div class="ip-address-item">
+                @if($syncIp['ipv4'])
+                    <span class="ip-label">IPv4 <span class="ip-status">Required</span></span>
+                    <div class="ip-box"><code id="sharkSyncIpv4">{{ $syncIp['ipv4'] }}</code><button class="copy-button" type="button" data-copy-target="sharkSyncIpv4">Copy IPv4</button></div>
+                @else
+                    <div class="ip-empty">Production IPv4 is not configured yet. Please contact support before creating the API key.</div>
+                @endif
+            </div>
+            <div class="ip-address-item">
+                @if($syncIp['ipv6'])
+                    <span class="ip-label">IPv6 <span class="ip-status">Add this too</span></span>
+                    <div class="ip-box"><code id="sharkSyncIpv6">{{ $syncIp['ipv6'] }}</code><button class="copy-button" type="button" data-copy-target="sharkSyncIpv6">Copy IPv6</button></div>
+                @else
+                    <div class="field-note" style="margin-top:12px;">The sync server does not use IPv6. Only whitelist the IPv4 shown here.</div>
+                @endif
+            </div>
+        </div>
+    </section>
+
+    <div class="settings-layout">
+        <form class="panel settings-form" method="POST" action="{{ route('shark.settings.save') }}">
+            @csrf
+            <section class="form-section">
+                <div class="section-heading"><span class="section-number">01</span><div><h2>Connection identity</h2><p>Name this account and choose its default market.</p></div></div>
+                <div class="settings-fields">
+                    <div><label for="connectionName">Connection name</label><input id="connectionName" name="name" value="{{ old('name', $account->name ?: 'Shark Exchange') }}" required></div>
+                    <div><label for="defaultSymbol">Default symbol</label><input id="defaultSymbol" name="default_symbol" value="{{ old('default_symbol', $account->default_symbol ?: 'BTCINR') }}" required><div class="field-note">Used as the initial symbol on market and sync pages.</div></div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="section-heading"><span class="section-number">02</span><div><h2>API credentials</h2><p>Use credentials with read-only trade and wallet permissions.</p></div></div>
+                <div class="settings-fields">
+                    <div class="field-wide"><label for="sharkApiKey">API key</label><div class="secret-wrap"><input id="sharkApiKey" type="password" name="api_key" value="{{ old('api_key') }}" placeholder="{{ $account->exists ? 'Saved — leave blank to keep the existing key' : 'Paste your Shark API key' }}" autocomplete="off"><button class="secret-toggle" type="button" data-target="sharkApiKey">Show</button></div></div>
+                    <div class="field-wide"><label for="sharkApiSecret">API secret</label><div class="secret-wrap"><input id="sharkApiSecret" type="password" name="api_secret" value="{{ old('api_secret') }}" placeholder="{{ $account->exists ? 'Saved — leave blank to keep the existing secret' : 'Paste your Shark API secret' }}" autocomplete="off"><button class="secret-toggle" type="button" data-target="sharkApiSecret">Show</button></div></div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="section-heading"><span class="section-number">03</span><div><h2>Exchange configuration</h2><p>Default Shark endpoints are recommended for most accounts.</p></div></div>
+                <div class="settings-fields">
+                    <div class="field-wide"><label for="baseUrl">Private API base URL</label><input id="baseUrl" name="base_url" value="{{ old('base_url', $account->base_url ?: 'https://api.sharkexchange.in') }}" required></div>
+                    <div><label for="publicBaseUrl">Public API base URL</label><input id="publicBaseUrl" name="public_base_url" value="{{ old('public_base_url', $account->public_base_url ?: 'https://api.sharkexchange.in') }}" required></div>
+                    <div><label for="marginAsset">Margin asset</label><input id="marginAsset" name="margin_asset" value="{{ old('margin_asset', $account->margin_asset ?: 'INR') }}" required></div>
+                    <label class="sync-toggle field-wide" for="autoSync"><input id="autoSync" type="checkbox" name="auto_sync_enabled" value="1" @checked(old('auto_sync_enabled', $account->auto_sync_enabled ?? true))><span><strong>Automatic trade-history sync</strong><small>Allow the scheduler to refresh your Shark trades every few minutes.</small></span></label>
+                </div>
+            </section>
+
+            <section class="form-section"><div class="form-actions"><button class="btn" type="submit">Save connection</button><a class="btn secondary" href="{{ route('shark.sync') }}"><svg class="icon"><use href="#icon-sync"></use></svg>Open sync center</a></div></section>
+        </form>
+
+        <aside class="settings-aside">
+            <section class="aside-card">
+                <h3>Connection checklist</h3><p>Complete these steps before your first sync.</p>
+                <div class="setup-list"><div class="setup-step"><b>1</b><span>In Shark, open API Management and create a dedicated key named TradeYatra.</span></div><div class="setup-step"><b>2</b><span>Enable read access for trades, orders, positions and wallet data. Disable trading and withdrawals.</span></div><div class="setup-step"><b>3</b><span>Add the IPv4 and, when shown, IPv6 above to the key's whitelist and save it.</span></div><div class="setup-step"><b>4</b><span>Paste the key and secret here, save, then run a manual sync.</span></div></div>
+            </section>
+            <section class="aside-card security-card">
+                <h3>Security reminder</h3><p>Your journal never needs withdrawal permission.</p>
+                <div class="security-list"><span>Use read-only permissions</span><span>Keep withdrawals disabled</span><span>Restrict access by server IP</span></div>
+            </section>
+        </aside>
+    </div>
+
+    <section class="panel logs-panel table-wrap">
+        <div class="logs-head"><div><h2>Recent sync activity</h2><span class="muted">Connection attempts and imported trade history</span></div><div class="logs-summary"><span class="log-count">{{ $logs->count() }} attempts</span><span class="log-count">{{ $successfulSyncs }} successful</span></div></div>
+        <table><thead><tr><th>Date and time</th><th>Status</th><th>Imported</th><th>Message</th></tr></thead><tbody>
+            @forelse($logs as $log)
+                <tr><td><strong>{{ $log->created_at->format('d M Y') }}</strong><br><span class="muted">{{ $log->created_at->format('H:i') }}</span></td><td><span class="status-dot {{ $log->status }}">{{ $log->status }}</span></td><td>{{ $log->imported_count }} trades</td><td class="muted">{{ $log->message }}</td></tr>
+            @empty <tr><td colspan="4" class="muted" style="text-align:center;padding:28px;">No sync activity yet. Save your connection and run the first sync.</td></tr> @endforelse
+        </tbody></table>
+    </section>
+</div>
+
+<script>
+(() => {
+document.querySelectorAll('.secret-toggle').forEach(button => {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.target);
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        button.textContent = reveal ? 'Hide' : 'Show';
+    });
+});
+document.querySelectorAll('[data-copy-target]').forEach(button => button.addEventListener('click', async event => {
+    const value = document.getElementById(button.dataset.copyTarget)?.textContent.trim();
+    if (!value) return;
+    const original = event.currentTarget.textContent;
+    await navigator.clipboard?.writeText(value);
+    event.currentTarget.textContent = 'Copied';
+    setTimeout(() => event.currentTarget.textContent = original, 1600);
+}));
+})();
+</script>
+@endsection

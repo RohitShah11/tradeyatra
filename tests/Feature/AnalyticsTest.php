@@ -1,0 +1,79 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Admin;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+class AnalyticsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_public_visit_and_campaign_are_recorded(): void
+    {
+        Http::fake([
+            'ipwho.is/*' => Http::response([
+                'success' => true,
+                'country_code' => 'IN',
+                'country' => 'India',
+                'region' => 'Maharashtra',
+                'city' => 'Mumbai',
+            ]),
+        ]);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '49.36.10.20'])
+            ->withHeader('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15 Version/17.0 Mobile/15 Safari/604.1')
+            ->get('/?utm_source=instagram&utm_medium=social&utm_campaign=launch')->assertOk();
+
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'page_view',
+            'route' => 'home',
+            'source' => 'instagram',
+            'medium' => 'social',
+            'campaign' => 'launch',
+            'device_type' => 'Mobile',
+            'browser' => 'Safari',
+            'operating_system' => 'iOS',
+            'country_code' => 'IN',
+            'region' => 'Maharashtra',
+            'city' => 'Mumbai',
+        ]);
+    }
+
+    public function test_registration_is_attributed_to_the_visitor(): void
+    {
+        $this->get('/?utm_source=youtube');
+        $this->post(route('register.store'), [
+            'name' => 'Analytics User',
+            'email' => 'analytics@example.com',
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'registration_completed',
+            'source' => 'youtube',
+            'user_id' => 1,
+        ]);
+    }
+
+    public function test_admin_can_view_analytics_dashboard(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => 'SecureAdmin123',
+        ]);
+
+        $this->actingAs($admin, 'admin')->get(route('admin.analytics'))
+            ->assertOk()
+            ->assertSee('Conversion funnel')
+            ->assertSee('Unique visitors')
+            ->assertSee('Shark connection rate')
+            ->assertSee('Campaign performance')
+            ->assertSee('Operating systems')
+            ->assertSee('Visitor locations in India');
+    }
+}
