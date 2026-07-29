@@ -46,6 +46,26 @@ class AdminAnalyticsController extends Controller
                 'connections' => $events->where('event', 'broker_connection_success')->count(),
             ];
         })->sortByDesc('visitors')->take(10);
+        $indiaLocations = (clone $base)->where('event', 'page_view')
+            ->where('country_code', 'IN')
+            ->whereNotNull('region')
+            ->selectRaw("region, COALESCE(NULLIF(city, ''), 'Unknown city') as city_name, COUNT(DISTINCT visitor_id) as visitors, COUNT(*) as views")
+            ->groupBy('region', 'city_name')
+            ->orderByDesc('visitors')
+            ->limit(20)
+            ->get();
+        $indiaPagesByLocation = (clone $base)->where('event', 'page_view')
+            ->where('country_code', 'IN')
+            ->whereNotNull('region')
+            ->selectRaw("region, COALESCE(NULLIF(city, ''), 'Unknown city') as city_name, COALESCE(NULLIF(path, ''), '/') as page_path, COUNT(*) as views, MAX(created_at) as last_viewed_at")
+            ->groupBy('region', 'city_name', 'page_path')
+            ->orderByDesc('views')
+            ->get()
+            ->groupBy(fn ($page) => $page->region."\0".$page->city_name);
+
+        $indiaLocations->each(function ($location) use ($indiaPagesByLocation) {
+            $location->pages = $indiaPagesByLocation->get($location->region."\0".$location->city_name, collect());
+        });
 
         return view('admin.analytics', [
             'days' => $days,
@@ -68,14 +88,7 @@ class AdminAnalyticsController extends Controller
             'devices' => $this->dimensionSummary(clone $base, 'device_type'),
             'browsers' => $this->dimensionSummary(clone $base, 'browser'),
             'operatingSystems' => $this->dimensionSummary(clone $base, 'operating_system'),
-            'indiaLocations' => (clone $base)->where('event', 'page_view')
-                ->where('country_code', 'IN')
-                ->whereNotNull('region')
-                ->selectRaw("region, COALESCE(NULLIF(city, ''), 'Unknown city') as city_name, COUNT(DISTINCT visitor_id) as visitors, COUNT(*) as views")
-                ->groupBy('region', 'city_name')
-                ->orderByDesc('visitors')
-                ->limit(20)
-                ->get(),
+            'indiaLocations' => $indiaLocations,
             'recentEvents' => (clone $base)->latest()->limit(25)->get(),
         ]);
     }

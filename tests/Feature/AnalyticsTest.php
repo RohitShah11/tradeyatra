@@ -66,7 +66,7 @@ class AnalyticsTest extends TestCase
         AnalyticsEvent::create([
             'visitor_id' => 'visitor-location-test',
             'event' => 'page_view',
-            'path' => '/',
+            'path' => '/guides',
             'country_code' => 'IN',
             'country' => 'India',
             'region' => 'Maharashtra',
@@ -88,6 +88,10 @@ class AnalyticsTest extends TestCase
             ->assertSee('Operating systems')
             ->assertSee('Visitor locations in India')
             ->assertSee('<th>Location</th>', false)
+            ->assertSee('Pages viewed')
+            ->assertSee('/guides')
+            ->assertSee('1 view')
+            ->assertSee('Last viewed')
             ->assertSee('Mumbai')
             ->assertSee('Maharashtra, India');
     }
