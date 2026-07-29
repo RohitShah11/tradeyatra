@@ -16,7 +16,12 @@ class TrackPageVisit
         $response = $next($request);
         $userAgent = strtolower((string) $request->userAgent());
 
-        if ($request->isMethod('GET') && $response->isSuccessful() && ! preg_match('/bot|crawl|spider|slurp|preview/', $userAgent)) {
+        $contentType = strtolower((string) $response->headers->get('Content-Type'));
+
+        if ($request->isMethod('GET')
+            && $response->isSuccessful()
+            && str_contains($contentType, 'text/html')
+            && ! preg_match('/bot|crawl|spider|slurp|preview/', $userAgent)) {
             $this->tracker->track($request, 'page_view');
         }
 

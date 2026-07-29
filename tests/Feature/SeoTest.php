@@ -36,8 +36,13 @@ class SeoTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('<link rel="canonical" href="'.route('home').'">', false)
+            ->assertSee('<meta name="application-name" content="TradeYatra">', false)
+            ->assertSee('<meta property="og:site_name" content="TradeYatra">', false)
             ->assertSee('property="og:image"', false)
             ->assertSee('"@type":"Organization"', false)
+            ->assertSee('"@type":"WebSite"', false)
+            ->assertSee('"name":"TradeYatra"', false)
+            ->assertSee('"alternateName":"Trade Yatra"', false)
             ->assertSee('"@type":"SoftwareApplication"', false);
     }
 
@@ -58,6 +63,7 @@ class SeoTest extends TestCase
 
         $this->get(route('home'))
             ->assertSee('href="'.route('home').'#faq">FAQ', false)
+            ->assertSee('aria-label="Mobile navigation"', false)
             ->assertDontSee('href="'.route('home').'#faq" wire:navigate', false);
     }
 

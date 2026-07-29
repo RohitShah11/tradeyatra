@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Admin;
+use App\Models\AnalyticsEvent;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -61,6 +63,16 @@ class AnalyticsTest extends TestCase
 
     public function test_admin_can_view_analytics_dashboard(): void
     {
+        AnalyticsEvent::create([
+            'visitor_id' => 'visitor-location-test',
+            'event' => 'page_view',
+            'path' => '/',
+            'country_code' => 'IN',
+            'country' => 'India',
+            'region' => 'Maharashtra',
+            'city' => 'Mumbai',
+        ]);
+
         $admin = Admin::create([
             'name' => 'Admin',
             'email' => 'admin@example.com',
@@ -74,6 +86,38 @@ class AnalyticsTest extends TestCase
             ->assertSee('Shark connection rate')
             ->assertSee('Campaign performance')
             ->assertSee('Operating systems')
-            ->assertSee('Visitor locations in India');
+            ->assertSee('Visitor locations in India')
+            ->assertSee('<th>Location</th>', false)
+            ->assertSee('Mumbai')
+            ->assertSee('Maharashtra, India');
+    }
+
+    public function test_authenticated_html_pages_are_included_in_page_view_analytics(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withHeader('User-Agent', 'Mozilla/5.0 Chrome/126.0')
+            ->get(route('dashboard'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->withHeader('User-Agent', 'Mozilla/5.0 Chrome/126.0')
+            ->get(route('profile.edit'))
+            ->assertOk();
+
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'page_view',
+            'route' => 'dashboard',
+            'path' => '/dashboard',
+            'user_id' => $user->id,
+        ]);
+
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'page_view',
+            'route' => 'profile.edit',
+            'path' => '/profile',
+            'user_id' => $user->id,
+        ]);
     }
 }

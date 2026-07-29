@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Track Shark Exchange and Delta Exchange trades in one private trading journal. Review weekly and monthly performance, P&amp;L calendars, notes, and trading discipline.">
+    <meta name="application-name" content="TradeYatra">
     <meta name="robots" content="index,follow,max-image-preview:large">
     <meta name="theme-color" content="#071014">
     <link rel="canonical" href="{{ route('home') }}">
@@ -689,7 +690,33 @@
             .exchange-card { padding:19px; }
             .broker-workflow { grid-template-columns:1fr; }
             .sync-network { grid-template-columns:minmax(0,1fr); justify-items:stretch; }
-            .broker-node:after { display:none; }
+            .broker-node:after {
+                display:block;
+                top:100%;
+                right:auto;
+                bottom:auto;
+                left:50%;
+                width:2px;
+                height:30px;
+                background:linear-gradient(180deg,var(--node-color),color-mix(in srgb,var(--node-color) 22%,transparent));
+                background-size:100% 200%;
+                box-shadow:0 0 9px color-mix(in srgb,var(--node-color) 55%,transparent);
+                transform:translateX(-50%);
+                animation:dataFlowMobile 1.8s linear infinite;
+            }
+            .broker-node.shark:after {
+                right:auto;
+                left:50%;
+                transform:translateX(-50%);
+            }
+            .broker-node.delta:after {
+                top:auto;
+                bottom:100%;
+                left:50%;
+                background:linear-gradient(0deg,var(--node-color),color-mix(in srgb,var(--node-color) 22%,transparent));
+                background-size:100% 200%;
+                transform:translateX(-50%);
+            }
             .journal-hub { width:90px; height:90px; }
             .earth-globe { width:66px; height:66px; }
             .sync-visual { padding:18px; }
@@ -702,6 +729,7 @@
             .visual-frame { padding:6px; overflow:hidden; }
             .visual-frame img { width:100%; max-width:100%; height:auto; }
             .privacy-strip { padding:24px; }
+            @keyframes dataFlowMobile { to { background-position:0 -200%; } }
         }
         @media (prefers-reduced-motion: reduce) {
             .dashboard-showcase.reveal-enabled .showcase-copy,
@@ -1159,6 +1187,7 @@
                 '@type' => 'WebSite',
                 '@id' => route('home').'#website',
                 'name' => 'TradeYatra',
+                'alternateName' => 'Trade Yatra',
                 'url' => route('home'),
                 'publisher' => ['@id' => route('home').'#organization'],
                 'inLanguage' => 'en-IN',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminContactController;
 use App\Http\Controllers\Admin\AdminContributionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AiChatController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\DeltaExchangeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SharkExchangeController;
 use App\Http\Controllers\SupportContributionController;
@@ -32,6 +34,10 @@ Route::get('/sitemap.xml', function () {
     $urls = [
         ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'weekly'],
         ['loc' => route('broker.guide'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['loc' => route('resources.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ['loc' => route('resources.delta'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['loc' => route('resources.shark'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['loc' => route('resources.crypto-india'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['loc' => route('support-fund.index'), 'priority' => '0.6', 'changefreq' => 'weekly'],
         ['loc' => route('legal.risk'), 'priority' => '0.5', 'changefreq' => 'yearly'],
         ['loc' => route('legal.terms'), 'priority' => '0.4', 'changefreq' => 'yearly'],
@@ -85,6 +91,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('auth:admin')->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::patch('/settings/automatic-trade-sync', [AdminPlatformSettingsController::class, 'updateAutomaticTradeSync'])
+            ->name('settings.automatic-trade-sync');
         Route::get('/analytics', AdminAnalyticsController::class)->name('analytics');
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
@@ -107,6 +115,17 @@ Route::get('/terms', [LegalController::class, 'terms'])->middleware('analytics.v
 Route::get('/privacy', [LegalController::class, 'privacy'])->middleware('analytics.visit')->name('legal.privacy');
 Route::get('/risk-disclaimer', [LegalController::class, 'risk'])->middleware('analytics.visit')->name('legal.risk');
 Route::get('/broker-connection-guide', [BrokerGuideController::class, 'show'])->middleware('analytics.visit')->name('broker.guide');
+Route::get('/guides', [ResourceController::class, 'index'])->middleware('analytics.visit')->name('resources.index');
+Route::get('/delta-exchange-trading-journal', [ResourceController::class, 'show'])
+    ->defaults('slug', 'delta-exchange-trading-journal')->middleware('analytics.visit')->name('resources.delta');
+Route::get('/shark-exchange-trading-journal', [ResourceController::class, 'show'])
+    ->defaults('slug', 'shark-exchange-trading-journal')->middleware('analytics.visit')->name('resources.shark');
+Route::get('/crypto-trading-journal-india', [ResourceController::class, 'show'])
+    ->defaults('slug', 'crypto-trading-journal-india')->middleware('analytics.visit')->name('resources.crypto-india');
+Route::redirect('/resources', '/guides', 301);
+Route::redirect('/resources/delta-exchange-trading-journal', '/delta-exchange-trading-journal', 301);
+Route::redirect('/resources/shark-exchange-trading-journal', '/shark-exchange-trading-journal', 301);
+Route::redirect('/resources/crypto-trading-journal-india', '/crypto-trading-journal-india', 301);
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->middleware('analytics.visit')->name('register');
@@ -121,7 +140,7 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'analytics.visit'])->group(function () {
     Route::get('/ai-chat', [AiChatController::class, 'index'])->name('ai-chat.index');
     Route::post('/ai-chat/conversations', [AiChatController::class, 'createConversation'])->name('ai-chat.conversations.create');
     Route::post('/ai-chat/messages', [AiChatController::class, 'message'])->middleware('throttle:20,1')->name('ai-chat.messages.store');

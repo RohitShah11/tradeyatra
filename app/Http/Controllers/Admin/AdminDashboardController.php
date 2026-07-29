@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
+use App\Models\PlatformSetting;
 use App\Models\Trade;
 use App\Models\User;
 use Illuminate\View\View;
@@ -21,6 +22,7 @@ class AdminDashboardController extends Controller
             ],
             'recentUsers' => User::latest()->limit(6)->get(),
             'recentMessages' => ContactMessage::latest()->limit(6)->get(),
+            'automaticTradeSyncEnabled' => PlatformSetting::automaticTradeSyncEnabled(),
         ]);
     }
 }

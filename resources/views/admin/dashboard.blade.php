@@ -3,5 +3,24 @@
 @section('content')
 <div class="page-head"><div><h1>Platform overview</h1><p>Monitor account growth, usage, and support requests.</p></div><span class="muted">{{ now()->format('d M Y, h:i A') }}</span></div>
 <div class="grid stats"><div class="stat"><span>Total users</span><strong>{{ number_format($stats['users']) }}</strong></div><div class="stat"><span>New users (30 days)</span><strong>{{ number_format($stats['newUsers']) }}</strong></div><div class="stat"><span>Journal trades</span><strong>{{ number_format($stats['trades']) }}</strong></div><div class="stat"><span>Open messages</span><strong>{{ number_format($stats['messages']) }}</strong></div></div>
+<section class="panel" style="margin-bottom:22px">
+    <div class="panel-head">
+        <div><h2>Automatic trade sync</h2><span class="muted">Global control for scheduled Shark and Delta imports.</span></div>
+        <span class="badge {{ $automaticTradeSyncEnabled ? '' : 'closed' }}">{{ $automaticTradeSyncEnabled ? 'ON' : 'OFF' }}</span>
+    </div>
+    <div class="panel-body" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
+        <p class="muted" style="max-width:680px;margin:0">
+            {{ $automaticTradeSyncEnabled
+                ? 'Scheduled sync runs every five minutes for users who enabled auto sync.'
+                : 'No scheduled trade sync jobs will run. Users can still run a manual sync.' }}
+        </p>
+        <form method="POST" action="{{ route('admin.settings.automatic-trade-sync') }}">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="automatic_trade_sync_enabled" value="{{ $automaticTradeSyncEnabled ? 0 : 1 }}">
+            <button class="btn {{ $automaticTradeSyncEnabled ? 'secondary' : '' }}" type="submit">Turn automatic sync {{ $automaticTradeSyncEnabled ? 'OFF' : 'ON' }}</button>
+        </form>
+    </div>
+</section>
 <div class="grid two-col"><section class="panel"><div class="panel-head"><h2>Recent users</h2><a class="muted" href="{{ route('admin.users.index') }}">View all →</a></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Joined</th></tr></thead><tbody>@forelse($recentUsers as $user)<tr><td><a href="{{ route('admin.users.show',$user) }}"><strong>{{ $user->name }}</strong><br><span class="muted">{{ $user->email }}</span></a></td><td>{{ $user->created_at->diffForHumans() }}</td></tr>@empty<tr><td colspan="2" class="empty">No users yet.</td></tr>@endforelse</tbody></table></div></section><section class="panel"><div class="panel-head"><h2>Recent contact messages</h2><a class="muted" href="{{ route('admin.contacts.index') }}">Open inbox →</a></div><div class="table-wrap"><table><thead><tr><th>Sender</th><th>Status</th></tr></thead><tbody>@forelse($recentMessages as $message)<tr><td><a href="{{ route('admin.contacts.show',$message) }}"><strong>{{ $message->name }}</strong><br><span class="muted">{{ Str::limit($message->message,38) }}</span></a></td><td><span class="badge {{ $message->status }}">{{ str_replace('_',' ',$message->status) }}</span></td></tr>@empty<tr><td colspan="2" class="empty">No messages yet.</td></tr>@endforelse</tbody></table></div></section></div>
 @endsection

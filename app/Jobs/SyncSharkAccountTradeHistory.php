@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\SharkAccount;
+use App\Models\PlatformSetting;
 use App\Services\SharkTradeHistorySyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -22,6 +23,10 @@ class SyncSharkAccountTradeHistory implements ShouldQueue
 
     public function handle(SharkTradeHistorySyncService $syncService): void
     {
+        if (! PlatformSetting::automaticTradeSyncEnabled()) {
+            return;
+        }
+
         $account = SharkAccount::query()->find($this->sharkAccountId);
 
         if (! $account || ! $account->user_id || ! $account->is_active || ! $account->auto_sync_enabled || ! $account->api_key || ! $account->api_secret) {
