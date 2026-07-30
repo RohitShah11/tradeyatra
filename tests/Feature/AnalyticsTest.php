@@ -72,6 +72,15 @@ class AnalyticsTest extends TestCase
             'region' => 'Maharashtra',
             'city' => 'Mumbai',
         ]);
+        AnalyticsEvent::create([
+            'visitor_id' => 'visitor-location-us',
+            'event' => 'page_view',
+            'path' => '/',
+            'country_code' => 'US',
+            'country' => 'United States',
+            'region' => 'Nebraska',
+            'city' => 'Springfield',
+        ]);
 
         $admin = Admin::create([
             'name' => 'Admin',
@@ -86,14 +95,18 @@ class AnalyticsTest extends TestCase
             ->assertSee('Shark connection rate')
             ->assertSee('Campaign performance')
             ->assertSee('Operating systems')
-            ->assertSee('Visitor locations in India')
+            ->assertSee('Visitor locations worldwide')
+            ->assertSee('<th>Country</th>', false)
             ->assertSee('<th>Location</th>', false)
             ->assertSee('Pages viewed')
             ->assertSee('/guides')
             ->assertSee('1 view')
             ->assertSee('Last viewed')
             ->assertSee('Mumbai')
-            ->assertSee('Maharashtra, India');
+            ->assertSee('Maharashtra, India')
+            ->assertSee('Springfield')
+            ->assertSee('Nebraska')
+            ->assertSee('United States');
     }
 
     public function test_authenticated_html_pages_are_included_in_page_view_analytics(): void
