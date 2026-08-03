@@ -59,7 +59,7 @@ class AiChatController extends Controller
         $assistant = $conversation->messages()->create([
             'role' => 'assistant',
             'content' => $answer['message'],
-            'metadata' => ['context' => $answer['context'], 'links' => $answer['links']],
+            'metadata' => ['context' => $answer['context'], 'links' => $answer['links'], 'metrics' => $answer['metrics']],
         ]);
         $conversation->touch();
 
@@ -71,6 +71,7 @@ class AiChatController extends Controller
                 'content' => $assistant->content,
                 'context' => $answer['context'],
                 'links' => $answer['links'],
+                'metrics' => $answer['metrics'],
             ],
             'conversations' => $this->recentConversations(),
         ]);
@@ -92,6 +93,7 @@ class AiChatController extends Controller
                 'content' => $message->content,
                 'context' => $message->metadata['context'] ?? null,
                 'links' => $message->metadata['links'] ?? [],
+                'metrics' => $message->metadata['metrics'] ?? [],
             ])->values(),
         ];
     }
@@ -108,6 +110,7 @@ class AiChatController extends Controller
             'Compare my Shark and Delta trades',
             'Which strategy performs best?',
             'What mistakes appear in my losing trades?',
+            'Give me a weekly coaching review',
             'Review my trading plan for today',
         ];
     }

@@ -19,6 +19,8 @@ class TradeController extends Controller
     public function dashboard(Request $request)
     {
         $trades = $this->filteredTrades($request)->orderBy('date')->get();
+        $dashboardWeekStart = $this->dashboardWeekStart($request->input('dashboard_week'));
+        $dashboardMonth = $this->dashboardMonth($request->input('dashboard_month'));
         $recentTrades = $this->resultTradesQuery()->latest('date')->latest('time')->limit(8)->get();
         $todayTrades = $this->resultTradesQuery()->whereDate('date', Carbon::today())->get();
         $openTrades = Trade::where('user_id', auth()->id())->where('status', 'Open')->latest()->get();
@@ -37,9 +39,11 @@ class TradeController extends Controller
             'stats' => $this->stats($trades),
             'equity' => $this->equitySeries($trades),
             'exchangeReports' => [
-                'shark' => $this->dashboardExchangeReport($trades->where('broker', 'SharkExchange'), auth()->user()->currency ?: 'INR'),
-                'delta' => $this->dashboardExchangeReport($trades->where('broker', 'Delta Exchange'), 'USD'),
+                'shark' => $this->dashboardExchangeReport($trades->where('broker', 'SharkExchange'), auth()->user()->currency ?: 'INR', $dashboardWeekStart, $dashboardMonth),
+                'delta' => $this->dashboardExchangeReport($trades->where('broker', 'Delta Exchange'), 'USD', $dashboardWeekStart, $dashboardMonth),
             ],
+            'dashboardWeekStart' => $dashboardWeekStart,
+            'dashboardMonth' => $dashboardMonth,
             'dailyPlan' => DailyPlan::query()
                 ->where('user_id', auth()->id())
                 ->whereDate('plan_date', Carbon::today())
@@ -95,13 +99,10 @@ class TradeController extends Controller
         ]);
     }
 
-    private function dashboardExchangeReport($trades, string $currency): array
+    private function dashboardExchangeReport($trades, string $currency, Carbon $weekStart, Carbon $monthStart): array
     {
-        $now = now();
-        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY);
-        $weekEnd = $now->copy()->endOfWeek(Carbon::SUNDAY);
-        $monthStart = $now->copy()->startOfMonth();
-        $monthEnd = $now->copy()->endOfMonth();
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+        $monthEnd = $monthStart->copy()->endOfMonth();
         $weeklyTrades = $trades->filter(fn (Trade $trade) => $trade->date?->between($weekStart, $weekEnd));
         $monthlyTrades = $trades->filter(fn (Trade $trade) => $trade->date?->between($monthStart, $monthEnd));
 
@@ -145,6 +146,20 @@ class TradeController extends Controller
                 ])->all(),
             ]),
         ];
+    }
+
+    private function dashboardWeekStart(?string $week): Carbon
+    {
+        try {
+            return $week ? Carbon::createFromFormat('Y-m-d', $week)->startOfWeek(Carbon::MONDAY) : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable) {
+            return now()->startOfWeek(Carbon::MONDAY);
+        }
+    }
+
+    private function dashboardMonth(?string $month): Carbon
+    {
+        return $this->calendarMonth($month);
     }
 
     private function latestWalletLog(string $accountColumn): ?SyncLog

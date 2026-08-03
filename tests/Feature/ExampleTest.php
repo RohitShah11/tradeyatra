@@ -86,6 +86,25 @@ class ExampleTest extends TestCase
         $response->assertSee('INR 12,345.67');
     }
 
+    public function test_dashboard_reports_can_navigate_to_selected_week_and_month(): void
+    {
+        $user = User::factory()->create();
+        Trade::factory()->create([
+            'user_id' => $user->id,
+            'broker' => 'SharkExchange',
+            'date' => '2026-05-12',
+            'net_pnl' => 125,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/dashboard?dashboard_week=2026-05-11&dashboard_month=2026-05')
+            ->assertOk()
+            ->assertSee('11 May - 17 May 2026')
+            ->assertSee('May 2026')
+            ->assertSee('aria-label="Previous week"', false)
+            ->assertSee('aria-label="Next month"', false);
+    }
+
     public function test_daily_plan_can_be_saved_with_ajax(): void
     {
         $user = User::factory()->create();

@@ -44,6 +44,8 @@ class AiChatTest extends TestCase
             ->assertOk()
             ->assertJsonPath('message.role', 'assistant')
             ->assertJsonPath('message.context', 'Analysing 1 trade')
+            ->assertJsonPath('message.metrics.0.label', 'Net P&L')
+            ->assertJsonPath('message.metrics.2.value', '1')
             ->assertJsonFragment(['conversation_id' => 1]);
 
         $this->assertStringContainsString('1 trade', $response->json('message.content'));

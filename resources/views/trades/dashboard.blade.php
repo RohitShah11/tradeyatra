@@ -21,6 +21,11 @@
     $manualTrades = $trades->whereNull('imported_at')->count();
     $sharkPrimaryBalance = collect($sharkWallet['balances'])->first(fn($balance) => strtoupper($balance['currency']) === 'USD') ?? collect($sharkWallet['balances'])->first();
     $deltaUsdBalance = collect($deltaWallet['balances'])->first(fn($balance) => strtoupper($balance['currency']) === 'USD');
+    $dashboardQuery = fn (array $period) => array_filter(array_merge(['broker' => request('broker')], $period));
+    $previousWeek = $dashboardWeekStart->copy()->subWeek()->toDateString();
+    $nextWeek = $dashboardWeekStart->copy()->addWeek()->toDateString();
+    $previousMonth = $dashboardMonth->copy()->subMonth()->format('Y-m');
+    $nextMonth = $dashboardMonth->copy()->addMonth()->format('Y-m');
 @endphp
 
 <style>
@@ -84,6 +89,18 @@
     .report-grid { display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); gap:12px; }
     .report-card { padding:16px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.025); }
     .report-card-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:14px; }
+    .report-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .report-nav { display:inline-flex; gap:4px; flex-shrink:0; }
+    .report-nav-button { width:26px; height:26px; display:grid; place-items:center; border:1px solid var(--line); border-radius:7px; color:var(--ink); background:rgba(255,255,255,.04); font-size:15px; line-height:1; text-decoration:none; transition:.18s ease; }
+    .report-nav-button:hover { border-color:rgba(24,199,255,.45); color:#18c7ff; background:rgba(24,199,255,.08); }
+    .report-section { position:relative; }
+    .report-section.is-loading { pointer-events:none; }
+    .report-section.is-loading:before { content:""; position:absolute; z-index:20; inset:0; border-radius:17px; background:rgba(2,8,11,.62); backdrop-filter:blur(2px); }
+    html[data-theme="light"] .report-section.is-loading:before { background:rgba(255,255,255,.7); }
+    @keyframes dashboard-spin { to { transform:rotate(360deg); } }
+    .dashboard-ajax-loader { position:fixed; z-index:85; top:82px; left:50%; display:flex; align-items:center; gap:10px; padding:10px 15px; border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line)); border-radius:999px; color:var(--ink); background:color-mix(in srgb,var(--panel) 95%,transparent); box-shadow:0 14px 38px rgba(0,0,0,.25); opacity:0; visibility:hidden; transform:translate(-50%,-7px); transition:.15s; pointer-events:none; backdrop-filter:blur(12px); }
+    .dashboard-ajax-loader.active { opacity:1; visibility:visible; transform:translate(-50%,0); }
+    .dashboard-ajax-loader-spinner { width:17px; height:17px; border:2px solid color-mix(in srgb,var(--accent) 22%,transparent); border-top-color:var(--accent); border-right-color:var(--accent-2); border-radius:50%; animation:dashboard-spin .65s linear infinite; }
     .report-card-head strong,.report-card-head small { display:block; }
     .report-card-head strong { font-size:15px; }
     .report-card-head small { color:var(--muted); margin-top:2px; }
@@ -166,6 +183,7 @@
     @media(max-width:620px){ .kpi-grid{grid-template-columns:1fr;} .briefing{padding:18px;} .source-grid{grid-template-columns:1fr;} }
 </style>
 
+<div class="dashboard-ajax-loader" id="dashboardReportsLoader" role="status" aria-live="polite" aria-hidden="true"><span class="dashboard-ajax-loader-spinner"></span><strong>Updating reports</strong></div>
 <div class="dashboard-grid">
     <section class="briefing">
         <div>
@@ -212,7 +230,7 @@
         </form>
     </section>
 
-    <section class="report-section" aria-labelledby="exchangeReportTitle">
+    <section class="report-section" id="exchangeReportsPanel" aria-labelledby="exchangeReportTitle">
         <div class="report-toolbar">
             <div><h2 id="exchangeReportTitle">Exchange reports</h2><span class="muted">Switch exchange to compare this week and month</span></div>
             <div class="exchange-switch" role="group" aria-label="Select exchange">
@@ -225,7 +243,7 @@
             <div class="exchange-report" data-report="{{ $exchangeKey }}" {{ $exchangeKey === 'delta' ? 'hidden' : '' }}>
                 <div class="report-grid">
                     <article class="report-card">
-                        <div class="report-card-head"><span><strong>Weekly report</strong><small>{{ $exchangeName }}</small></span><span class="report-period">{{ $report['week']['label'] }}</span></div>
+                        <div class="report-card-head"><span><strong>Weekly report</strong><small>{{ $exchangeName }}</small></span><span class="report-card-heading"><span class="report-period">{{ $report['week']['label'] }}</span><span class="report-nav" aria-label="Weekly report navigation"><a class="report-nav-button" href="{{ route('dashboard', $dashboardQuery(['dashboard_week' => $previousWeek, 'dashboard_month' => $dashboardMonth->format('Y-m')])) }}" aria-label="Previous week">&#8592;</a><a class="report-nav-button" href="{{ route('dashboard', $dashboardQuery(['dashboard_week' => $nextWeek, 'dashboard_month' => $dashboardMonth->format('Y-m')])) }}" aria-label="Next week">&#8594;</a></span></span></div>
                         <div class="report-net {{ $report['week']['net'] >= 0 ? 'positive' : 'negative' }}">{{ $report['currency'] }} {{ number_format($report['week']['net'], 2) }}</div>
                         <div class="report-stats">
                             <div class="report-stat"><span>Trades</span><strong>{{ $report['week']['total'] }}</strong></div>
@@ -241,7 +259,7 @@
                         </div>
                     </article>
                     <article class="report-card">
-                        <div class="report-card-head"><span><strong>Monthly report</strong><small>{{ $exchangeName }}</small></span><span class="report-period">{{ $report['month']['label'] }}</span></div>
+                        <div class="report-card-head"><span><strong>Monthly report</strong><small>{{ $exchangeName }}</small></span><span class="report-card-heading"><span class="report-period">{{ $report['month']['label'] }}</span><span class="report-nav" aria-label="Monthly report navigation"><a class="report-nav-button" href="{{ route('dashboard', $dashboardQuery(['dashboard_week' => $dashboardWeekStart->toDateString(), 'dashboard_month' => $previousMonth])) }}" aria-label="Previous month">&#8592;</a><a class="report-nav-button" href="{{ route('dashboard', $dashboardQuery(['dashboard_week' => $dashboardWeekStart->toDateString(), 'dashboard_month' => $nextMonth])) }}" aria-label="Next month">&#8594;</a></span></span></div>
                         <div class="month-layout">
                             <div>
                                 <div class="report-net {{ $report['month']['net'] >= 0 ? 'positive' : 'negative' }}">{{ $report['currency'] }} {{ number_format($report['month']['net'], 2) }}</div>
@@ -351,19 +369,74 @@ dailyPlanForm?.addEventListener('submit', async (event) => {
         if (label) label.textContent = 'Save plan';
     }
 });
-document.querySelectorAll('.exchange-switch button').forEach(button => {
-    button.addEventListener('click', () => {
-        const exchange = button.dataset.exchange;
-        document.querySelectorAll('.exchange-switch button').forEach(item => {
-            const selected = item === button;
-            item.classList.toggle('active', selected);
-            item.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        });
-        document.querySelectorAll('.exchange-report').forEach(report => {
-            report.hidden = report.dataset.report !== exchange;
-        });
+let exchangeReportRequestController = null;
+const dashboardReportsLoader = document.getElementById('dashboardReportsLoader');
+const setActiveExchange = (exchange) => {
+    const panel = document.getElementById('exchangeReportsPanel');
+    if (!panel) return;
+    panel.querySelectorAll('.exchange-switch button').forEach(button => {
+        const selected = button.dataset.exchange === exchange;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
-});
+    panel.querySelectorAll('.exchange-report').forEach(report => {
+        report.hidden = report.dataset.report !== exchange;
+    });
+};
+const activeExchange = () => document.querySelector('#exchangeReportsPanel .exchange-switch button.active')?.dataset.exchange || 'shark';
+const loadExchangeReports = async (url, updateHistory = true) => {
+    const panel = document.getElementById('exchangeReportsPanel');
+    if (!panel) return;
+    const exchange = activeExchange();
+    exchangeReportRequestController?.abort();
+    const requestController = new AbortController();
+    exchangeReportRequestController = requestController;
+    const loadingStartedAt = performance.now();
+    panel.classList.add('is-loading');
+    panel.setAttribute('aria-busy', 'true');
+    dashboardReportsLoader?.classList.add('active');
+    dashboardReportsLoader?.setAttribute('aria-hidden', 'false');
+
+    try {
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const response = await fetch(url, {
+            headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            signal: requestController.signal,
+        });
+        if (!response.ok) throw new Error('The exchange reports could not be loaded.');
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextPanel = page.getElementById('exchangeReportsPanel');
+        if (!nextPanel) throw new Error('The exchange reports response was incomplete.');
+        panel.innerHTML = nextPanel.innerHTML;
+        setActiveExchange(exchange);
+        if (updateHistory) history.pushState({ exchangeReports: true }, '', url);
+    } catch (error) {
+        if (error.name !== 'AbortError') window.showAppToast?.('error', 'Reports unavailable', error.message || 'The exchange reports could not be loaded.');
+    } finally {
+        if (exchangeReportRequestController === requestController) {
+            const remainingLoaderTime = Math.max(0, 450 - (performance.now() - loadingStartedAt));
+            if (remainingLoaderTime) await new Promise((resolve) => setTimeout(resolve, remainingLoaderTime));
+            panel.classList.remove('is-loading');
+            panel.removeAttribute('aria-busy');
+            dashboardReportsLoader?.classList.remove('active');
+            dashboardReportsLoader?.setAttribute('aria-hidden', 'true');
+        }
+    }
+};
+document.addEventListener('click', (event) => {
+    const exchangeButton = event.target.closest('#exchangeReportsPanel .exchange-switch button');
+    if (exchangeButton) {
+        setActiveExchange(exchangeButton.dataset.exchange);
+        return;
+    }
+    const link = event.target.closest('#exchangeReportsPanel .report-nav-button[href]');
+    if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    loadExchangeReports(link.href);
+}, { signal: window.tradeYatraNavigationSignal });
+window.addEventListener('popstate', () => {
+    if (window.location.pathname.endsWith('/dashboard')) loadExchangeReports(window.location.href, false);
+}, { signal: window.tradeYatraNavigationSignal });
 })();
 </script>
 @endsection
