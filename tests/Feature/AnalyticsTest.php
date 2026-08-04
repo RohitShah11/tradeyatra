@@ -61,6 +61,63 @@ class AnalyticsTest extends TestCase
         ]);
     }
 
+    public function test_registration_funnel_events_are_recorded_for_the_same_visitor(): void
+    {
+        $this->get('/?utm_source=instagram&utm_campaign=founding_traders');
+
+        $this->postJson(route('analytics.events.store'), [
+            'event' => 'registration_cta_clicked',
+            'metadata' => ['cta' => 'Start Free', 'placement' => 'homepage_hero'],
+        ])->assertCreated();
+
+        $this->get(route('register'))->assertOk();
+
+        $this->postJson(route('analytics.events.store'), [
+            'event' => 'registration_form_started',
+            'metadata' => ['placement' => 'registration'],
+        ])->assertCreated();
+
+        $visitorIds = AnalyticsEvent::query()
+            ->whereIn('event', ['registration_cta_clicked', 'registration_form_started'])
+            ->pluck('visitor_id')->unique();
+
+        $this->assertCount(1, $visitorIds);
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'registration_cta_clicked',
+            'source' => 'instagram',
+            'campaign' => 'founding_traders',
+        ]);
+        $this->assertDatabaseHas('analytics_events', [
+            'event' => 'page_view',
+            'path' => '/register',
+        ]);
+    }
+
+    public function test_registration_validation_failures_record_only_field_names(): void
+    {
+        $this->post(route('register.store'), [
+            'name' => '',
+            'email' => 'not-an-email',
+            'password' => 'weak',
+            'password_confirmation' => 'different',
+        ])->assertSessionHasErrors(['name', 'email', 'password']);
+
+        $event = AnalyticsEvent::where('event', 'registration_validation_failed')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(['name', 'email', 'password'], $event->metadata['fields']);
+        $this->assertStringNotContainsString('not-an-email', json_encode($event->metadata));
+        $this->assertStringNotContainsString('weak', json_encode($event->metadata));
+    }
+
+    public function test_unknown_public_analytics_events_are_rejected(): void
+    {
+        $this->postJson(route('analytics.events.store'), [
+            'event' => 'made_up_event',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('analytics_events', 0);
+    }
+
     public function test_admin_can_view_analytics_dashboard(): void
     {
         AnalyticsEvent::create([
@@ -91,6 +148,10 @@ class AnalyticsTest extends TestCase
         $this->actingAs($admin, 'admin')->get(route('admin.analytics'))
             ->assertOk()
             ->assertSee('Conversion funnel')
+            ->assertSee('CTA clicks')
+            ->assertSee('Registration page')
+            ->assertSee('Form started')
+            ->assertSee('Validation failures')
             ->assertSee('Unique visitors')
             ->assertSee('Shark connection rate')
             ->assertSee('Campaign performance')

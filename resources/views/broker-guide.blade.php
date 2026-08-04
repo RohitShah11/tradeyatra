@@ -138,7 +138,7 @@
             </div></div>
         </section>
 
-        <section><div class="wrap cta"><div><h2>Ready to connect?</h2><p class="muted">Create your journal, connect one exchange at a time, and verify the first sync before enabling automatic updates.</p></div><a class="btn primary" href="{{ route('register') }}">Create Journal</a></div></section>
+        <section><div class="wrap cta"><div><h2>Ready to connect?</h2><p class="muted">Create your journal, connect one exchange at a time, and verify the first sync before enabling automatic updates.</p></div><a class="btn primary" href="{{ route('register') }}" data-analytics-event="registration_cta_clicked" data-analytics-placement="broker_guide">Create Journal</a></div></section>
     </main>
 
     @include('partials.public-footer')

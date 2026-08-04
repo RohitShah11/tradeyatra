@@ -19,6 +19,22 @@ class AdminAnalyticsController extends Controller
         $visitors = (clone $base)->where('event', 'page_view')->distinct('visitor_id')->count('visitor_id');
         $registrations = (clone $base)->where('event', 'registration_completed')->count();
         $connections = (clone $base)->where('event', 'broker_connection_success')->distinct('user_id')->count('user_id');
+        $funnelCounts = [
+            'Visitors' => $visitors,
+            'CTA clicks' => (clone $base)->where('event', 'registration_cta_clicked')->distinct('visitor_id')->count('visitor_id'),
+            'Registration page' => (clone $base)->where('event', 'page_view')->where('path', '/register')->distinct('visitor_id')->count('visitor_id'),
+            'Form started' => (clone $base)->where('event', 'registration_form_started')->distinct('visitor_id')->count('visitor_id'),
+            'Registered' => $registrations,
+            'Broker connected' => $connections,
+        ];
+        $previous = null;
+        $funnel = collect($funnelCounts)->map(function ($count, $label) use (&$previous) {
+            $rate = $previous === null ? null : ($previous ? round($count / $previous * 100, 1) : 0);
+            $step = compact('label', 'count', 'rate');
+            $previous = $count;
+
+            return $step;
+        })->values();
 
         $rawTrend = (clone $base)->where('event', 'page_view')
             ->selectRaw('DATE(created_at) as day, COUNT(*) as views, COUNT(DISTINCT visitor_id) as visitors')
@@ -81,9 +97,11 @@ class AdminAnalyticsController extends Controller
                 'registrations' => $registrations,
                 'connections' => $connections,
                 'failedConnections' => $brokerEvents->where('event', 'broker_connection_failed')->count(),
+                'validationFailures' => (clone $base)->where('event', 'registration_validation_failed')->count(),
                 'registrationRate' => $visitors ? round($registrations / $visitors * 100, 1) : 0,
                 'connectionRate' => $registrations ? round($connections / $registrations * 100, 1) : 0,
             ],
+            'funnel' => $funnel,
             'trend' => $trend,
             'maxViews' => max(1, (int) $trend->max('views')),
             'brokerStats' => $brokerStats,

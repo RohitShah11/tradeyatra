@@ -299,7 +299,7 @@
             padding: 14px;
             box-shadow: 0 18px 40px rgba(0,0,0,.3);
         }
-        .trade-card small, .mini small { color: var(--muted); font-weight: 700; }
+        .trade-card small { color: var(--muted); font-weight: 700; }
         .gain { color: var(--green); font-size: 28px; font-weight: 800; margin-top: 4px; }
         .journal-row {
             display: grid;
@@ -408,8 +408,8 @@
         .section-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 28px; }
         .section-head h2 { margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.05; }
         .section-head p { margin: 0; max-width: 430px; color: var(--muted); }
-        .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-        .feature, .mini, .step, .faq-item {
+        .features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+        .feature, .faq-item {
             border: 1px solid var(--line);
             border-radius: 8px;
             background: rgba(255,255,255,.045);
@@ -426,8 +426,8 @@
             margin-bottom: 16px;
             font-weight: 900;
         }
-        .feature h3, .step h3, .faq-item h3 { margin: 0 0 8px; font-size: 19px; }
-        .feature p, .step p, .faq-item p { margin: 0; color: var(--muted); }
+        .feature h3 { margin: 0 0 8px; font-size: 19px; }
+        .feature p { margin: 0; color: var(--muted); }
         .product-tour { position:relative; overflow:hidden; }
         .product-tour:before {
             content:"";
@@ -441,34 +441,8 @@
             background:radial-gradient(circle,rgba(25,199,181,.09),transparent 68%);
             pointer-events:none;
         }
-        .product-grid {
-            position:relative;
-            display:grid;
-            grid-template-columns:repeat(12,minmax(0,1fr));
-            gap:16px;
-        }
-        .product-card {
-            position:relative;
-            overflow:hidden;
-            min-height:250px;
-            padding:26px;
-            border:1px solid var(--line);
-            border-radius:14px;
-            background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,122,26,.025));
-            transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;
-        }
-        .product-card:hover { transform:translateY(-4px); border-color:rgba(25,199,181,.38); box-shadow:0 24px 60px rgba(0,0,0,.2); }
-        .product-card.large { grid-column:span 7; }
-        .product-card.medium { grid-column:span 5; }
-        .product-card.third { grid-column:span 4; min-height:230px; }
         .product-number { display:inline-flex; align-items:center; gap:9px; color:var(--cyan-2); font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
         .product-number:before { content:""; width:22px; height:1px; background:currentColor; }
-        .product-card h3 { max-width:480px; margin:32px 0 10px; font-size:clamp(22px,3vw,32px); line-height:1.08; }
-        .product-card p { max-width:520px; margin:0; color:var(--muted); }
-        .product-tags { display:flex; flex-wrap:wrap; gap:7px; margin-top:24px; }
-        .product-tags span { padding:6px 9px; border:1px solid rgba(255,255,255,.09); border-radius:999px; color:#bfd0d7; background:rgba(0,0,0,.14); font-size:11px; font-weight:800; }
-        .product-glow { position:absolute; width:180px; height:180px; right:-70px; bottom:-80px; border-radius:50%; background:radial-gradient(circle,rgba(255,122,26,.18),transparent 68%); pointer-events:none; }
-        .product-card:nth-child(even) .product-glow { background:radial-gradient(circle,rgba(25,199,181,.17),transparent 68%); }
         .visual-gallery { display:grid; gap:22px; margin-top:24px; }
         .visual-story {
             display:grid;
@@ -507,34 +481,6 @@
         .privacy-points { display:grid; gap:10px; }
         .privacy-point { display:flex; align-items:flex-start; gap:11px; padding:12px 14px; border:1px solid rgba(255,255,255,.08); border-radius:9px; background:rgba(0,0,0,.12); color:#d3e2e7; font-size:13px; }
         .privacy-point b { color:var(--green); }
-        .analytics {
-            display: grid;
-            grid-template-columns: .9fr 1.1fr;
-            gap: 18px;
-            align-items: stretch;
-        }
-        .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        .mini strong { display: block; font-size: 34px; margin-top: 8px; }
-        .review-panel {
-            border: 1px solid rgba(102, 236, 255, .2);
-            border-radius: 8px;
-            background: linear-gradient(135deg, rgba(24,199,255,.12), rgba(32,230,164,.06));
-            padding: 24px;
-        }
-        .review-panel h3 { margin: 0 0 14px; font-size: 24px; }
-        .checklist { display: grid; gap: 10px; margin-top: 20px; }
-        .check { display: flex; gap: 10px; align-items: center; color: #c8d9e4; }
-        .check b { color: var(--green); }
-        .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; counter-reset: steps; }
-        .step { position: relative; min-height: 180px; }
-        .step:before {
-            counter-increment: steps;
-            content: "0" counter(steps);
-            display: inline-flex;
-            margin-bottom: 18px;
-            color: var(--cyan-2);
-            font-weight: 900;
-        }
         .cta {
             border: 1px solid rgba(32,230,164,.26);
             border-radius: 8px;
@@ -550,6 +496,14 @@
         .cta h2 { margin: 0 0 10px; font-size: clamp(28px, 4vw, 48px); line-height: 1.05; }
         .cta p { margin: 0; color: #c3d5df; max-width: 650px; }
         .faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .faq-item { align-self:start; padding:0; overflow:hidden; }
+        .faq-item summary { position:relative; display:flex; align-items:center; min-height:64px; padding:17px 56px 17px 22px; color:var(--text); font-size:15px; font-weight:600; cursor:pointer; list-style:none; }
+        .faq-item summary::-webkit-details-marker { display:none; }
+        .faq-item summary::after { content:"+"; position:absolute; right:21px; top:50%; width:28px; height:28px; display:grid; place-items:center; transform:translateY(-50%); border:1px solid rgba(24,199,255,.22); border-radius:8px; color:var(--cyan-2); background:rgba(24,199,255,.07); font-size:20px; line-height:1; }
+        .faq-item[open] summary::after { content:"−"; }
+        .faq-item[open] summary { border-bottom:1px solid var(--line); }
+        .faq-item p { margin:0; padding:18px 22px 22px; color:var(--muted); }
+        .faq-item summary:focus-visible { outline:2px solid var(--cyan); outline-offset:-3px; }
         .contact-grid { display:grid; grid-template-columns:.8fr 1.2fr; gap:38px; align-items:start; }
         .contact-copy h2 { margin:14px 0; font-size:clamp(30px,4vw,46px); line-height:1.08; }
         .contact-copy p { color:var(--muted); margin:0; max-width:460px; }
@@ -627,8 +581,6 @@
         html[data-public-theme="light"] .showcase-point { color:#354e57; background:rgba(255,255,255,.72); }
         html[data-public-theme="light"] .exchange-card { background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(255,122,26,.045)); box-shadow:0 16px 42px rgba(35,71,82,.08); }
         html[data-public-theme="light"] .exchange-capabilities span { color:#49636c; border-color:rgba(20,80,92,.12); background:rgba(238,247,249,.85); }
-        html[data-public-theme="light"] .product-card { background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(255,122,26,.045)); box-shadow:0 16px 42px rgba(35,71,82,.07); }
-        html[data-public-theme="light"] .product-tags span { color:#49636c; border-color:rgba(20,80,92,.12); background:rgba(238,247,249,.85); }
         html[data-public-theme="light"] .visual-story { background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(255,122,26,.045)); box-shadow:0 18px 52px rgba(35,71,82,.1); }
         html[data-public-theme="light"] .visual-list span { color:#405a63; }
         html[data-public-theme="light"] .privacy-point { color:#354e57; border-color:rgba(20,80,92,.12); background:rgba(255,255,255,.62); }
@@ -655,15 +607,14 @@
         .path { background:linear-gradient(180deg,rgba(255,122,26,.68),rgba(255,122,26,.03)); border-color:#ff7a1a; }
         .gain { color:#34d399; }
         .tag { background:#ff7a1a; color:#fff; }
-        .feature,.mini,.step,.faq-item { background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,122,26,.035)); }
+        .feature,.faq-item { background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,122,26,.035)); }
         .icon { background:rgba(255,122,26,.13); color:#ffad68; }
-        .review-panel,.cta { background:linear-gradient(135deg,rgba(255,122,26,.14),rgba(25,199,181,.06)); border-color:rgba(255,122,26,.24); }
+        .cta { background:linear-gradient(135deg,rgba(255,122,26,.14),rgba(25,199,181,.06)); border-color:rgba(255,122,26,.24); }
         @media (max-width: 980px) {
             .nav-links { display: none; }
-            .hero-grid, .analytics, .cta, .contact-grid { grid-template-columns: 1fr; }
+            .hero-grid, .cta, .contact-grid { grid-template-columns: 1fr; }
             .terminal { max-width: 680px; }
-            .features, .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .product-card.large, .product-card.medium, .product-card.third { grid-column:span 6; }
+            .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .privacy-strip { grid-template-columns:1fr; }
             .visual-story, .visual-story:nth-child(even) { grid-template-columns:1fr; }
             .visual-story:nth-child(even) .visual-copy, .visual-story:nth-child(even) .visual-frame { order:initial; }
@@ -675,7 +626,7 @@
             .nav-inner { min-height: 60px; }
             .nav-actions .btn:first-child { display: none; }
             .hero { padding-top: 54px; }
-            .hero-proof, .features, .steps, .mini-grid, .faq, .contact-form { grid-template-columns: 1fr; }
+            .hero-proof, .features, .faq, .contact-form { grid-template-columns: 1fr; }
             .chart { height: 220px; }
             .trade-card { position: relative; top: auto; right: auto; width: auto; margin: 14px; }
             .journal-row { grid-template-columns: 1fr; gap: 5px; }
@@ -721,10 +672,6 @@
             .earth-globe { width:66px; height:66px; }
             .sync-visual { padding:18px; }
             .live-metrics { grid-template-columns:minmax(0,1fr); }
-            .product-grid { grid-template-columns:1fr; }
-            .product-card.large, .product-card.medium, .product-card.third { grid-column:auto; min-height:0; }
-            .product-card { padding:22px; }
-            .product-card h3 { margin-top:24px; }
             .visual-copy { padding:24px; }
             .visual-frame { padding:6px; overflow:hidden; }
             .visual-frame img { width:100%; max-width:100%; height:auto; }
@@ -753,7 +700,7 @@
                     <h1>Turn your trade history into better trading decisions.</h1>
                     <p class="lead">Bring Shark Exchange and Delta Exchange India into one private trading journal. Review P&amp;L, execution, notes, and performance trends without moving between platforms.</p>
                     <div class="hero-actions">
-                        <a class="btn primary" href="{{ route('register') }}">Create Journal</a>
+                        <a class="btn primary" href="{{ route('register') }}" data-analytics-event="registration_cta_clicked" data-analytics-placement="homepage_hero">Create Journal</a>
                         <a class="btn" href="{{ route('broker.guide') }}" wire:navigate.hover>Broker Setup Guide</a>
                         <a class="btn" href="{{ route('login') }}">Open Dashboard</a>
                     </div>
@@ -894,39 +841,29 @@
         <section id="features">
             <div class="wrap">
                 <div class="section-head">
-                    <h2>A focused journal for every stage of your trading review.</h2>
-                    <p>Import exchange activity, capture context, and review the results through a workflow designed for practical improvement.</p>
+                    <h2>Everything needed for a focused trading review.</h2>
+                    <p>Connect activity, add context, and find the patterns worth improving.</p>
                 </div>
                 <div class="features">
                     <article class="feature">
                         <div class="icon">01</div>
-                        <h3>Import and log trades</h3>
-                        <p>Capture symbol, side, screenshots, setup notes, mistakes, emotions, and execution quality without clutter.</p>
+                        <h3>Connect and capture</h3>
+                        <p>Sync Shark and Delta activity or add trades manually in one journal.</p>
                     </article>
                     <article class="feature">
                         <div class="icon">02</div>
-                        <h3>Two exchange connections</h3>
-                        <p>Sync Shark and Delta trade history into one clean journal while keeping each source easy to filter.</p>
+                        <h3>Add useful context</h3>
+                        <p>Keep screenshots, setups, notes, mistakes, and emotions beside each trade.</p>
                     </article>
                     <article class="feature">
                         <div class="icon">03</div>
-                        <h3>Screenshot review</h3>
-                        <p>Attach before and after charts so every trade has context, not just numbers on a table.</p>
+                        <h3>Review performance</h3>
+                        <p>Use P&amp;L, win rate, filters, and the calendar to identify repeatable patterns.</p>
                     </article>
                     <article class="feature">
                         <div class="icon">04</div>
-                        <h3>Weekly and monthly reports</h3>
-                        <p>Compare net P&amp;L, win rate, average trade, best trades, and losing periods across weeks and months.</p>
-                    </article>
-                    <article class="feature">
-                        <div class="icon">05</div>
-                        <h3>Discipline tracking</h3>
-                        <p>Separate good losses from bad decisions with process tags and post-trade notes.</p>
-                    </article>
-                    <article class="feature">
-                        <div class="icon">06</div>
-                        <h3>Built for Indian traders</h3>
-                        <p>INR-friendly presentation, crypto derivatives context, and a broker-inspired visual identity.</p>
+                        <h3>Improve discipline</h3>
+                        <p>Separate planned losses from avoidable mistakes with notes and process tags.</p>
                     </article>
                 </div>
             </div>
@@ -937,49 +874,10 @@
                 <div class="section-head">
                     <div>
                         <span class="eyebrow"><span class="pulse"></span> After you log in</span>
-                        <h2 id="inside-app-title" style="margin-top:16px">One workspace for the full review cycle.</h2>
+                        <h2 id="inside-app-title" style="margin-top:16px">See the journal in action.</h2>
                     </div>
-                    <p>TradeYatra connects the daily actions of a trader—from planning and syncing to review, research, and improvement.</p>
+                    <p>Three real product views show how daily results become a clearer review process.</p>
                 </div>
-
-                <div class="product-grid">
-                    <article class="product-card large">
-                        <span class="product-number">01 · Command center</span>
-                        <h3>Start each session with the numbers and plan that matter.</h3>
-                        <p>Your dashboard brings Shark and Delta balances, recent performance, sync status, and the daily trading plan into one view.</p>
-                        <div class="product-tags"><span>Exchange balances</span><span>Daily P&amp;L</span><span>Trading plan</span><span>Recent activity</span></div>
-                        <span class="product-glow"></span>
-                    </article>
-                    <article class="product-card medium">
-                        <span class="product-number">02 · Journal</span>
-                        <h3>Give every trade useful context.</h3>
-                        <p>Record the setup, direction, execution, screenshots, notes, mistakes, and emotions behind the result.</p>
-                        <div class="product-tags"><span>Manual entries</span><span>Screenshots</span><span>Notes</span><span>Process tags</span></div>
-                        <span class="product-glow"></span>
-                    </article>
-                    <article class="product-card third">
-                        <span class="product-number">03 · Analysis</span>
-                        <h3>See what is actually driving performance.</h3>
-                        <p>Break results down by exchange, symbol, direction, date, and outcome instead of relying on memory.</p>
-                        <div class="product-tags"><span>Win rate</span><span>Net P&amp;L</span><span>Filters</span></div>
-                        <span class="product-glow"></span>
-                    </article>
-                    <article class="product-card third">
-                        <span class="product-number">04 · Calendar</span>
-                        <h3>Turn daily outcomes into a visible pattern.</h3>
-                        <p>Scan profitable and losing days, attach daily notes, and understand how consistency changes over time.</p>
-                        <div class="product-tags"><span>P&amp;L calendar</span><span>Daily notes</span><span>Monthly view</span></div>
-                        <span class="product-glow"></span>
-                    </article>
-                    <article class="product-card third">
-                        <span class="product-number">05 · Intelligence</span>
-                        <h3>Turn journal data into questions you can act on.</h3>
-                        <p>Use market news and crypto context for research, then ask Yatra AI to review performance, strategies, mistakes, and discipline—not to generate trade signals.</p>
-                        <div class="product-tags"><span>Monthly summary</span><span>Strategy review</span><span>Shark vs Delta</span><span>Plan review</span></div>
-                        <span class="product-glow"></span>
-                    </article>
-                </div>
-
                 <div class="visual-gallery" aria-label="TradeYatra product previews">
                     <article class="visual-story">
                         <div class="visual-copy">
@@ -1041,63 +939,29 @@
             </div>
         </section>
 
-        <section id="reports">
-            <div class="wrap analytics">
-                <div class="mini-grid">
-                    <div class="mini"><small>Win Rate</small><strong>62%</strong></div>
-                    <div class="mini"><small>Avg Profit</small><strong>INR 7.8K</strong></div>
-                    <div class="mini"><small>Best Setup</small><strong>Breakout</strong></div>
-                    <div class="mini"><small>Risk Rule</small><strong>92%</strong></div>
-                </div>
-                <div class="review-panel">
-                    <span class="eyebrow"><span class="pulse"></span> Reports that teach</span>
-                    <h3>Find the periods worth repeating and the habits worth changing.</h3>
-                    <p class="lead">Weekly reports, monthly comparisons, and the P&amp;L calendar turn exchange history into a practical feedback loop for your next session.</p>
-                    <div class="checklist">
-                        <div class="check"><b>✓</b><span>Filter by market, date, symbol, direction, and outcome.</span></div>
-                        <div class="check"><b>✓</b><span>Review notes and screenshots beside P&amp;L metrics.</span></div>
-                        <div class="check"><b>✓</b><span>Compare Shark, Delta, and manually logged trades.</span></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="workflow">
-            <div class="wrap">
-                <div class="section-head">
-                    <h2>Review in four simple steps.</h2>
-                    <p>A clean workflow that keeps journaling close to the actual trading process.</p>
-                </div>
-                <div class="steps">
-                    <article class="step"><h3>Create account</h3><p>Set up your secure journal profile and start with a focused dashboard.</p></article>
-                    <article class="step"><h3>Add or sync</h3><p>Log trades manually or use the Shark sync area to bring your trade history in.</p></article>
-                    <article class="step"><h3>Attach context</h3><p>Add chart screenshots, setup labels, rules followed, and trade notes.</p></article>
-                    <article class="step"><h3>Improve weekly</h3><p>Use performance reports to spot stronger periods, losses, and discipline trends.</p></article>
-                </div>
-            </div>
-        </section>
-
         <section>
             <div class="wrap cta">
                 <div>
                     <h2>Build a trading record you can trust.</h2>
                     <p>Start your journal, keep your review cycle simple, and make every session easier to learn from.</p>
                 </div>
-                <a class="btn primary" href="{{ route('register') }}">Start Free</a>
+                <a class="btn primary" href="{{ route('register') }}" data-analytics-event="registration_cta_clicked" data-analytics-placement="homepage_final_cta">Start Free</a>
             </div>
         </section>
 
         <section id="faq">
             <div class="wrap">
                 <div class="section-head">
-                    <h2>Questions traders ask.</h2>
-                    <p>Simple answers before you start tracking your next trade.</p>
+                    <h2>Questions before you start.</h2>
+                    <p>Clear answers about access, exchange connections, privacy, and how TradeYatra uses your data.</p>
                 </div>
                 <div class="faq">
-                    <article class="faq-item"><h3>Which exchanges can I connect?</h3><p>TradeYatra currently provides dedicated connections and sync workflows for Shark Exchange and Delta Exchange.</p></article>
-                    <article class="faq-item"><h3>Can I use screenshots?</h3><p>Yes. Trade records can include screenshots so the journal captures both numbers and chart context.</p></article>
-                    <article class="faq-item"><h3>Does it replace my broker?</h3><p>No. It is a review and analytics layer for improving your trading process.</p></article>
-                    <article class="faq-item"><h3>Can I access my dashboard now?</h3><p>Yes. Login or register from this page and you will enter the existing trading journal app.</p></article>
+                    <details class="faq-item"><summary>Which exchanges does TradeYatra support?</summary><p>TradeYatra currently supports dedicated connection and sync workflows for Shark Exchange and Delta Exchange India.</p></details>
+                    <details class="faq-item"><summary>Is TradeYatra free to start?</summary><p>Yes. You can create an account and start using the currently available trading journal features without payment.</p></details>
+                    <details class="faq-item"><summary>Can TradeYatra place trades or withdraw funds?</summary><p>No. TradeYatra is a record-keeping and review tool. It does not place trades, withdraw funds, or provide trade-execution services.</p></details>
+                    <details class="faq-item"><summary>How are my exchange API credentials handled?</summary><p>Credentials configured for exchange connections are stored encrypted and used only for the supported read and sync workflows. Use a dedicated API key with only the minimum required permissions.</p></details>
+                    <details class="faq-item"><summary>Can I journal trades without connecting an exchange?</summary><p>Yes. You can add trades manually and include setups, screenshots, notes, mistakes, emotions, and execution details.</p></details>
+                    <details class="faq-item"><summary>Does Yatra AI provide trading signals?</summary><p>No. Yatra AI reviews the journal data and notes already in your account. It is designed for performance reflection—not predictions, signals, or financial advice.</p></details>
                 </div>
             </div>
         </section>
@@ -1119,12 +983,12 @@
                     @csrf
                     <div class="form-field">
                         <label for="contact-name">Name</label>
-                        <input id="contact-name" name="name" type="text" value="{{ old('name') }}" maxlength="100" autocomplete="name" required aria-describedby="name-error">
+                        <input id="contact-name" name="name" type="text" value="{{ old('name') }}" maxlength="100" autocomplete="name" placeholder="Name" required aria-describedby="name-error">
                         @error('name') <span class="form-error" id="name-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="form-field">
                         <label for="contact-email">Email</label>
-                        <input id="contact-email" name="email" type="email" value="{{ old('email') }}" maxlength="254" autocomplete="email" required aria-describedby="email-error">
+                        <input id="contact-email" name="email" type="email" value="{{ old('email') }}" maxlength="254" autocomplete="email" placeholder="Email" required aria-describedby="email-error">
                         @error('email') <span class="form-error" id="email-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="form-field full">
@@ -1205,9 +1069,12 @@
             [
                 '@type' => 'FAQPage',
                 'mainEntity' => [
-                    ['@type' => 'Question', 'name' => 'Which exchanges can I connect?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'TradeYatra currently provides dedicated connections and sync workflows for Shark Exchange and Delta Exchange.']],
-                    ['@type' => 'Question', 'name' => 'Can I add screenshots to trades?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. Trade records can include screenshots so the journal captures both performance numbers and chart context.']],
-                    ['@type' => 'Question', 'name' => 'Does TradeYatra replace my exchange?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'No. TradeYatra is a journaling and performance-review layer designed to complement an exchange account.']],
+                    ['@type' => 'Question', 'name' => 'Which exchanges does TradeYatra support?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'TradeYatra currently supports dedicated connection and sync workflows for Shark Exchange and Delta Exchange India.']],
+                    ['@type' => 'Question', 'name' => 'Is TradeYatra free to start?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. You can create an account and start using the currently available trading journal features without payment.']],
+                    ['@type' => 'Question', 'name' => 'Can TradeYatra place trades or withdraw funds?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'No. TradeYatra is a record-keeping and review tool. It does not place trades, withdraw funds, or provide trade-execution services.']],
+                    ['@type' => 'Question', 'name' => 'How are my exchange API credentials handled?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Credentials configured for exchange connections are stored encrypted and used only for the supported read and sync workflows. Use a dedicated API key with only the minimum required permissions.']],
+                    ['@type' => 'Question', 'name' => 'Can I journal trades without connecting an exchange?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. You can add trades manually and include setups, screenshots, notes, mistakes, emotions, and execution details.']],
+                    ['@type' => 'Question', 'name' => 'Does Yatra AI provide trading signals?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'No. Yatra AI reviews the journal data and notes already in your account. It is designed for performance reflection, not predictions, signals, or financial advice.']],
                 ],
             ],
         ],

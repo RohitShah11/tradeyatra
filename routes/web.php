@@ -5,11 +5,12 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminContactController;
 use App\Http\Controllers\Admin\AdminContributionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminPlatformSettingsController;
+use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AnalyticsEventController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BrokerGuideController;
 use App\Http\Controllers\ContactController;
@@ -17,9 +18,9 @@ use App\Http\Controllers\CryptoIntelligenceController;
 use App\Http\Controllers\DeltaExchangeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResourceController;
-use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SharkExchangeController;
 use App\Http\Controllers\SupportContributionController;
 use App\Http\Controllers\SupportTicketController;
@@ -38,6 +39,7 @@ Route::get('/sitemap.xml', function () {
         ['loc' => route('resources.delta'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['loc' => route('resources.shark'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['loc' => route('resources.crypto-india'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['loc' => route('founder'), 'priority' => '0.7', 'changefreq' => 'monthly'],
         ['loc' => route('support-fund.index'), 'priority' => '0.6', 'changefreq' => 'weekly'],
         ['loc' => route('legal.risk'), 'priority' => '0.5', 'changefreq' => 'yearly'],
         ['loc' => route('legal.terms'), 'priority' => '0.4', 'changefreq' => 'yearly'],
@@ -75,6 +77,10 @@ Route::get('/robots.txt', function () {
 Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('contact.store');
+
+Route::post('/analytics/events', [AnalyticsEventController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('analytics.events.store');
 
 Route::get('/support-tradeyatra', [SupportContributionController::class, 'index'])
     ->middleware('analytics.visit')
@@ -115,6 +121,7 @@ Route::get('/terms', [LegalController::class, 'terms'])->middleware('analytics.v
 Route::get('/privacy', [LegalController::class, 'privacy'])->middleware('analytics.visit')->name('legal.privacy');
 Route::get('/risk-disclaimer', [LegalController::class, 'risk'])->middleware('analytics.visit')->name('legal.risk');
 Route::get('/broker-connection-guide', [BrokerGuideController::class, 'show'])->middleware('analytics.visit')->name('broker.guide');
+Route::view('/founder', 'founder')->middleware('analytics.visit')->name('founder');
 Route::get('/guides', [ResourceController::class, 'index'])->middleware('analytics.visit')->name('resources.index');
 Route::get('/delta-exchange-trading-journal', [ResourceController::class, 'show'])
     ->defaults('slug', 'delta-exchange-trading-journal')->middleware('analytics.visit')->name('resources.delta');

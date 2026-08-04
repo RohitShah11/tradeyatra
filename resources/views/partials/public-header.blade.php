@@ -50,21 +50,22 @@
     <div class="public-header-wrap">
         <details class="public-mobile-menu">
             <summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
-            <nav aria-label="Mobile navigation"><a href="{{ route('home') }}#features">Features</a><a href="{{ route('home') }}#inside-app">Inside App</a><a href="{{ route('home') }}#reports">Reports</a><a href="{{ route('resources.index') }}" wire:navigate.hover>Guides</a><a href="{{ route('broker.guide') }}" wire:navigate.hover>Connect Broker</a><a href="{{ route('home') }}#faq">FAQ</a><a href="{{ route('support-fund.index') }}" wire:navigate.hover>Support Us</a><a href="{{ route('home') }}#contact">Contact</a></nav>
+            <nav aria-label="Mobile navigation"><a href="{{ route('home') }}#inside-app">Inside App</a><a href="{{ route('broker.guide') }}" wire:navigate.hover>Connect Broker</a><a href="{{ route('resources.index') }}" wire:navigate.hover>Guides</a><a href="{{ route('home') }}#faq">FAQ</a><a href="{{ route('founder') }}" wire:navigate.hover>Founder</a><a href="{{ route('home') }}#contact">Contact</a><a href="{{ route('support-fund.index') }}" wire:navigate.hover>Support Us</a></nav>
         </details>
         <a class="public-header-brand" href="{{ route('home') }}" wire:navigate.hover><span class="public-header-mark"><img src="{{ asset('images/branding/tradeyatra-icon-v2.png') }}" alt="" style="width:100%;height:100%;object-fit:contain"></span><span>TradeYatra</span></a>
-        <nav class="public-header-links" aria-label="Main navigation"><a href="{{ route('home') }}#features">Features</a><a href="{{ route('home') }}#inside-app">Inside App</a><a href="{{ route('home') }}#reports">Reports</a><a href="{{ route('resources.index') }}" wire:navigate.hover>Guides</a><a href="{{ route('broker.guide') }}" wire:navigate.hover>Connect Broker</a><a href="{{ route('home') }}#faq">FAQ</a><a href="{{ route('support-fund.index') }}" wire:navigate.hover>Support Us</a><a href="{{ route('home') }}#contact">Contact</a></nav>
+        <nav class="public-header-links" aria-label="Main navigation"><a href="{{ route('home') }}#inside-app">Inside App</a><a href="{{ route('broker.guide') }}" wire:navigate.hover>Connect Broker</a><a href="{{ route('resources.index') }}" wire:navigate.hover>Guides</a><a href="{{ route('home') }}#faq">FAQ</a><a href="{{ route('founder') }}" wire:navigate.hover>Founder</a><a href="{{ route('home') }}#contact">Contact</a><a href="{{ route('support-fund.index') }}" wire:navigate.hover>Support Us</a></nav>
         <div class="public-header-actions">
             @include('partials.public-theme-toggle')
             @auth
                 <a class="public-header-button primary" href="{{ route('dashboard') }}">Dashboard</a>
             @else
                 <a class="public-header-button login" href="{{ route('login') }}">Login</a>
-                <a class="public-header-button primary" href="{{ route('register') }}">Start Free</a>
+                <a class="public-header-button primary" href="{{ route('register') }}" data-analytics-event="registration_cta_clicked" data-analytics-placement="header">Start Free</a>
             @endauth
         </div>
     </div>
 </header>
+@include('partials.analytics-events')
 <script>
     document.querySelectorAll('.public-mobile-menu a').forEach(link => link.addEventListener('click', () => link.closest('details')?.removeAttribute('open'), { signal: window.tradeYatraPublicNavigationSignal }));
     document.addEventListener('click', event => document.querySelectorAll('.public-mobile-menu[open]').forEach(menu => {

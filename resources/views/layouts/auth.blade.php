@@ -348,5 +348,6 @@ window.addEventListener('pageshow', () => {
     });
 });
 </script>
+@include('partials.analytics-events')
 </body>
 </html>

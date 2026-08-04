@@ -4,7 +4,7 @@
     <h2>Create your account</h2>
     <p class="muted">Start your private multi-exchange trading journal.</p>
 
-    <form method="POST" action="{{ route('register.store') }}" data-loading-form>
+    <form method="POST" action="{{ route('register.store') }}" data-loading-form data-analytics-form="registration">
         @csrf
         <div class="field">
             <label for="name">Name</label>
