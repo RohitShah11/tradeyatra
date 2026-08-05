@@ -161,6 +161,8 @@ Route::middleware(['auth', 'analytics.visit'])->group(function () {
     Route::get('/trades-export', [TradeController::class, 'export'])->name('trades.export');
     Route::get('/trades/shark', [TradeController::class, 'sharkTrades'])->name('trades.shark');
     Route::get('/trades/delta', [TradeController::class, 'deltaTrades'])->name('trades.delta');
+    Route::get('/trades/{trade}/chart', [TradeController::class, 'chart'])->name('trades.chart');
+    Route::get('/trades/{trade}/candles', [TradeController::class, 'candles'])->middleware('throttle:60,1')->name('trades.candles');
     Route::post('/trades/{trade}/notes', [TradeController::class, 'updateNotes'])->name('trades.notes.update');
     Route::get('/trades/{trade}/screenshots/{filename}', [TradeController::class, 'screenshot'])->where('filename', '[^/]+')->name('trades.screenshot');
     Route::resource('trades', TradeController::class)->except('show');

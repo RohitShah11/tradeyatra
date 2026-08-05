@@ -7,12 +7,14 @@ use App\Models\DeltaAccount;
 use App\Models\SharkAccount;
 use App\Models\SyncLog;
 use App\Models\Trade;
+use App\Services\TradeChartMarketDataService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class TradeController extends Controller
 {
@@ -310,6 +312,37 @@ class TradeController extends Controller
         ])]);
     }
 
+    public function chart(Trade $trade)
+    {
+        abort_unless($trade->user_id === auth()->id(), 404);
+        $trade->loadMissing('user');
+
+        return view('trades.chart', [
+            'trade' => $trade,
+            'chartTrade' => $this->tradeChartPayload($trade),
+            'chartIntervals' => TradeChartMarketDataService::intervals(),
+        ]);
+    }
+
+    public function candles(Request $request, Trade $trade, TradeChartMarketDataService $marketData)
+    {
+        abort_unless($trade->user_id === auth()->id(), 404);
+
+        $validated = $request->validate([
+            'interval' => ['required', 'in:'.implode(',', TradeChartMarketDataService::intervals())],
+        ]);
+
+        try {
+            $trade->loadMissing('user');
+
+            return response()->json($marketData->candles($trade, $validated['interval']));
+        } catch (Throwable $exception) {
+            return response()->json([
+                'message' => $exception->getMessage() ?: 'Market candles could not be loaded for this trade.',
+            ], 422);
+        }
+    }
+
     public function store(Request $request)
     {
         Trade::create($this->payload($request) + ['user_id' => auth()->id()]);
@@ -409,12 +442,14 @@ class TradeController extends Controller
 
         return response()->streamDownload(function () use ($trades) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Date', 'Time', 'Broker', 'Asset Class', 'Segment', 'Symbol', 'Side', 'Status', 'Quantity', 'Entry', 'Exit', 'Profit', 'Loss', 'Fees', 'Net PnL', 'Currency', 'Strategy', 'Plan Followed', 'Setup Quality', 'Mistakes', 'Source', 'Notes']);
+            fputcsv($out, ['Entry Date', 'Entry Time', 'Exit Date', 'Exit Time', 'Broker', 'Asset Class', 'Segment', 'Symbol', 'Side', 'Status', 'Quantity', 'Entry', 'Planned SL', 'Planned TP', 'Exit', 'Profit', 'Loss', 'Fees', 'Net PnL', 'Currency', 'Strategy', 'Plan Followed', 'Setup Quality', 'Mistakes', 'Source', 'Notes']);
 
             foreach ($trades as $trade) {
                 fputcsv($out, [
                     optional($trade->date)->toDateString(),
                     $trade->time,
+                    optional($trade->exit_date)->toDateString(),
+                    $trade->exit_time,
                     $trade->broker,
                     $trade->asset_class,
                     $trade->market_segment,
@@ -423,6 +458,8 @@ class TradeController extends Controller
                     $trade->status,
                     $trade->quantity ?: $trade->lot_size,
                     $trade->entry_price,
+                    $trade->planned_stop_loss,
+                    $trade->planned_take_profit,
                     $trade->exit_price,
                     $trade->profit,
                     $trade->loss,
@@ -523,9 +560,11 @@ class TradeController extends Controller
 
     private function payload(Request $request, ?Trade $trade = null): array
     {
-        $submittedTime = $request->input('time');
-        if (is_string($submittedTime) && preg_match('/^\d{2}:\d{2}:\d{2}$/', $submittedTime)) {
-            $request->merge(['time' => substr($submittedTime, 0, 5)]);
+        foreach (['time', 'exit_time'] as $timeField) {
+            $submittedTime = $request->input($timeField);
+            if (is_string($submittedTime) && preg_match('/^\d{2}:\d{2}:\d{2}$/', $submittedTime)) {
+                $request->merge([$timeField => substr($submittedTime, 0, 5)]);
+            }
         }
 
         $data = $request->validate([
@@ -543,7 +582,11 @@ class TradeController extends Controller
             'lot_size' => ['nullable', 'numeric'],
             'quantity' => ['nullable', 'numeric'],
             'entry_price' => ['nullable', 'numeric'],
+            'planned_stop_loss' => ['nullable', 'numeric'],
+            'planned_take_profit' => ['nullable', 'numeric'],
             'exit_price' => ['nullable', 'numeric'],
+            'exit_date' => ['nullable', 'date', 'after_or_equal:date'],
+            'exit_time' => ['nullable', 'date_format:H:i'],
             'leverage' => ['nullable', 'numeric'],
             'risk_amount' => ['nullable', 'numeric'],
             'profit' => ['nullable', 'numeric'],
@@ -567,6 +610,44 @@ class TradeController extends Controller
         $data['screenshot'] = json_encode(array_merge($this->existingScreenshots($trade), $this->uploadScreenshots($request)));
 
         return $data;
+    }
+
+    private function tradeChartPayload(Trade $trade): array
+    {
+        $timezone = $trade->user?->timezone ?: config('app.timezone', 'UTC');
+        $entryDate = $trade->date?->toDateString() ?: Carbon::parse($trade->date)->toDateString();
+        $entryTime = $trade->time ? substr((string) $trade->time, 0, 8) : '00:00:00';
+        $entryAt = Carbon::parse($entryDate.' '.$entryTime, $timezone)->utc();
+        $exitAt = null;
+
+        if ($trade->exit_time) {
+            $hasExitDate = (bool) $trade->exit_date;
+            $exitDate = $trade->exit_date?->toDateString() ?: $entryDate;
+            $exitAt = Carbon::parse($exitDate.' '.substr((string) $trade->exit_time, 0, 8), $timezone)->utc();
+
+            if (! $hasExitDate && $exitAt->lt($entryAt)) {
+                $exitAt->addDay();
+            }
+        }
+
+        return [
+            'id' => $trade->id,
+            'symbol' => $trade->pair,
+            'broker' => $trade->broker ?: 'Manual',
+            'side' => $trade->trade_type,
+            'status' => $trade->status,
+            'entryPrice' => $trade->entry_price !== null ? (float) $trade->entry_price : null,
+            'entryTime' => $trade->time ? $entryAt->timestamp : null,
+            'stopLoss' => $trade->planned_stop_loss !== null ? (float) $trade->planned_stop_loss : null,
+            'takeProfit' => $trade->planned_take_profit !== null ? (float) $trade->planned_take_profit : null,
+            'exitPrice' => $trade->exit_price !== null ? (float) $trade->exit_price : null,
+            'exitTime' => $exitAt?->timestamp,
+            'quantity' => (float) ($trade->quantity ?: $trade->lot_size ?: 0),
+            'fees' => (float) ($trade->trading_fees ?: 0),
+            'netPnl' => round($trade->net_pnl, 8),
+            'currency' => $trade->currency ?: (auth()->user()->currency ?? 'INR'),
+            'timezone' => $timezone,
+        ];
     }
 
     private function uploadScreenshots(Request $request): array

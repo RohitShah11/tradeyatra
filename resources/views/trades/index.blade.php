@@ -128,7 +128,7 @@
                             <span class="muted">—</span>
                         @endif
                     </td>
-                    <td><div class="row-actions"><a class="row-action" href="{{ route('trades.edit',$trade) }}">Edit</a><form method="POST" action="{{ route('trades.destroy',$trade) }}">@csrf @method('DELETE')<button class="row-action delete" type="submit" onclick="return confirm('Delete this trade?')">Delete</button></form></div></td>
+                    <td><div class="row-actions"><a class="row-action" href="{{ route('trades.chart',$trade) }}">Chart</a><a class="row-action" href="{{ route('trades.edit',$trade) }}">Edit</a><form method="POST" action="{{ route('trades.destroy',$trade) }}">@csrf @method('DELETE')<button class="row-action delete" type="submit" onclick="return confirm('Delete this trade?')">Delete</button></form></div></td>
                 </tr>
             @empty <tr><td colspan="9" class="empty-journal">{{ $emptyMessage ?? 'No trades match this view. Adjust the filters or add a new trade.' }}</td></tr> @endforelse
         </tbody></table></div>

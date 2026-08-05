@@ -33,7 +33,11 @@ class Trade extends Model
         'exchange_payload',
         'notes',
         'entry_price',
+        'planned_stop_loss',
+        'planned_take_profit',
         'exit_price',
+        'exit_date',
+        'exit_time',
         'quantity',
         'leverage',
         'status',
@@ -50,6 +54,7 @@ class Trade extends Model
 
     protected $casts = [
         'date' => 'date',
+        'exit_date' => 'date',
         'mistake_tags' => 'array',
         'shark_payload' => 'array',
         'exchange_payload' => 'array',

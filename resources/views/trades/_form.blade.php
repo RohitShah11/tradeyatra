@@ -4,7 +4,7 @@
 @endif
 <div class="panel form-grid">
     <div><label>Date</label><input type="date" name="date" value="{{ old('date', optional($trade->date)->toDateString() ?: $trade->date) }}" required></div>
-    <div><label>Time</label><input type="time" name="time" value="{{ substr((string) old('time', $trade->time), 0, 5) }}"></div>
+    <div><label>Entry Time</label><input type="time" name="time" value="{{ substr((string) old('time', $trade->time), 0, 5) }}"></div>
     <div><label>Pair</label><input name="pair" value="{{ old('pair', $trade->pair) }}" placeholder="BTCINR" required></div>
     <div><label>Broker</label><input name="broker" value="{{ old('broker', $trade->broker ?: 'SharkExchange') }}" list="broker-list"></div>
     <datalist id="broker-list">
@@ -22,7 +22,11 @@
     <div><label>Quantity</label><input type="number" step="0.00000001" name="quantity" value="{{ old('quantity', $trade->quantity) }}"></div>
     <div><label>Lot Size</label><input type="number" step="0.01" name="lot_size" value="{{ old('lot_size', $trade->lot_size) }}"></div>
     <div><label>Entry Price</label><input type="number" step="0.00000001" name="entry_price" value="{{ old('entry_price', $trade->entry_price) }}"></div>
+    <div><label>Planned Stop-Loss</label><input type="number" step="0.00000001" name="planned_stop_loss" value="{{ old('planned_stop_loss', $trade->planned_stop_loss) }}" placeholder="Original SL"></div>
+    <div><label>Planned Take-Profit</label><input type="number" step="0.00000001" name="planned_take_profit" value="{{ old('planned_take_profit', $trade->planned_take_profit) }}" placeholder="Original TP"></div>
     <div><label>Exit Price</label><input type="number" step="0.00000001" name="exit_price" value="{{ old('exit_price', $trade->exit_price) }}"></div>
+    <div><label>Exit Date</label><input type="date" name="exit_date" value="{{ old('exit_date', optional($trade->exit_date)->toDateString() ?: $trade->exit_date) }}"></div>
+    <div><label>Exit Time</label><input type="time" name="exit_time" value="{{ substr((string) old('exit_time', $trade->exit_time), 0, 5) }}"></div>
     <div><label>Leverage</label><input type="number" step="0.01" name="leverage" value="{{ old('leverage', $trade->leverage) }}"></div>
     <div><label>Risk Amount</label><input type="number" step="0.01" name="risk_amount" value="{{ old('risk_amount', $trade->risk_amount) }}"></div>
     <div><label>Profit</label><input type="number" step="0.01" name="profit" value="{{ old('profit', $trade->profit) }}"></div>
