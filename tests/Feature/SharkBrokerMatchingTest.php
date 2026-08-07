@@ -56,6 +56,13 @@ class SharkBrokerMatchingTest extends TestCase
 
         $trade = Trade::firstOrFail();
         $this->assertSame(1, Trade::count());
+        $this->assertSame('Long', $trade->trade_type);
+        $this->assertSame('2026-07-01', $trade->date?->toDateString());
+        $this->assertSame('09:00', $trade->time);
+        $this->assertEquals(100, (float) $trade->entry_price);
+        $this->assertSame('2026-07-23', $trade->exit_date?->toDateString());
+        $this->assertSame('09:00', $trade->exit_time);
+        $this->assertEquals(110, (float) $trade->exit_price);
         $this->assertEqualsWithDelta(37.68, $trade->net_pnl, 0.0001);
         $this->assertEqualsWithDelta(107.1271, (float) $trade->trading_fees, 0.0001);
 
@@ -65,5 +72,32 @@ class SharkBrokerMatchingTest extends TestCase
             ->assertSee('INR 37.68')
             ->assertSee('107.13')
             ->assertSee('Fees: INR 107.13');
+    }
+
+    public function test_shark_buy_closing_execution_is_imported_as_a_short_trade(): void
+    {
+        $user = User::factory()->create();
+        $account = SharkAccount::create([
+            'user_id' => $user->id,
+            'name' => 'Shark',
+            'base_url' => 'https://api.sharkexchange.in',
+            'public_base_url' => 'https://api.sharkexchange.in',
+            'default_symbol' => 'ETHUSDT',
+            'margin_asset' => 'USDT',
+            'is_active' => true,
+        ]);
+
+        app(SharkTradeHistorySyncService::class)->reconcileStoredPayload($account, [[
+            'id' => 'short-close-1',
+            'positionId' => 'short-position-1',
+            'time' => '2026-07-23T09:00:00Z',
+            'symbol' => 'ETHUSDT',
+            'side' => 'BUY',
+            'quantity' => 1,
+            'price' => 3000,
+            'realizedProfitInMarginAsset' => 25,
+        ]]);
+
+        $this->assertSame('Short', Trade::firstOrFail()->trade_type);
     }
 }

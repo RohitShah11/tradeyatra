@@ -91,6 +91,8 @@ class SharkTradeHistorySyncService
                 continue;
             }
 
+            $openingExecution = $this->openingExecutionFor($records, $record);
+
             $trade = Trade::query()
                 ->where('user_id', $account->user_id)
                 ->when($tradeId, fn ($query) => $query->where('shark_trade_id', $tradeId))
@@ -99,15 +101,22 @@ class SharkTradeHistorySyncService
 
             $values = [
                 'user_id' => $account->user_id,
-                'date' => $this->dateFromRecord($record),
-                'time' => $this->timeFromRecord($record),
+                'date' => $this->dateFromRecord($openingExecution ?? $record),
+                'time' => $openingExecution ? $this->timeFromRecord($openingExecution) : null,
                 'pair' => $this->first($record, ['symbol', 'pair', 'contractPair']) ?: 'UNKNOWN',
-                'trade_type' => strtoupper((string) $this->first($record, ['side', 'orderSide'])) === 'SELL' ? 'Short' : 'Long',
+                // Realized-P&L history contains the closing execution. A SELL closes
+                // a long position, while a BUY closes a short position.
+                'trade_type' => $this->directionFromClosingExecution($record),
                 'status' => 'Closed',
                 'broker' => 'SharkExchange',
                 'lot_size' => $this->number($this->first($record, ['quantity', 'qty', 'executedQty'])),
                 'quantity' => $this->number($this->first($record, ['quantity', 'qty', 'executedQty'])),
-                'entry_price' => $this->number($this->first($record, ['price', 'avgPrice', 'averagePrice'])),
+                'entry_price' => $openingExecution
+                    ? $this->number($this->first($openingExecution, ['price', 'avgPrice', 'averagePrice']))
+                    : null,
+                'exit_price' => $this->number($this->first($record, ['price', 'avgPrice', 'averagePrice'])),
+                'exit_date' => $this->dateFromRecord($record),
+                'exit_time' => $this->timeFromRecord($record),
                 'profit' => max(0, $realizedProfit),
                 'loss' => abs(min(0, $realizedProfit)),
                 'trading_fees' => $allocatedFees[$index] ?? $this->brokerFee($record),
@@ -130,6 +139,52 @@ class SharkTradeHistorySyncService
         }
 
         return $count;
+    }
+
+    private function directionFromClosingExecution(array $record): string
+    {
+        return strtoupper((string) $this->first($record, ['side', 'orderSide'])) === 'SELL'
+            ? 'Long'
+            : 'Short';
+    }
+
+    private function openingExecutionFor(array $records, array $closingExecution): ?array
+    {
+        $positionId = (string) $this->first($closingExecution, ['positionId', 'position_id']);
+        $closingSide = strtoupper((string) $this->first($closingExecution, ['side', 'orderSide']));
+        $closingTime = $this->recordTimestamp($closingExecution);
+
+        if ($positionId === '' || $closingSide === '' || $closingTime === null) {
+            return null;
+        }
+
+        return collect($records)
+            ->filter(function (array $record) use ($positionId, $closingSide, $closingTime): bool {
+                $recordPositionId = (string) $this->first($record, ['positionId', 'position_id']);
+                $recordSide = strtoupper((string) $this->first($record, ['side', 'orderSide']));
+                $recordTime = $this->recordTimestamp($record);
+
+                return $recordPositionId === $positionId
+                    && $recordSide !== ''
+                    && $recordSide !== $closingSide
+                    && $recordTime !== null
+                    && $recordTime < $closingTime;
+            })
+            ->sortByDesc(fn (array $record) => $this->recordTimestamp($record))
+            ->first();
+    }
+
+    private function recordTimestamp(array $record): ?int
+    {
+        $timestamp = $this->first($record, ['time', 'createdAt', 'updatedAt', 'timestamp', 'tradeTime']);
+
+        if (! $timestamp) {
+            return null;
+        }
+
+        return is_numeric($timestamp)
+            ? (int) $timestamp
+            : Carbon::parse($timestamp)->getTimestampMs();
     }
 
     private function allocatedBrokerFees(array $records): array
