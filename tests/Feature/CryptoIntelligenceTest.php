@@ -25,26 +25,24 @@ class CryptoIntelligenceTest extends TestCase
         $this->get('/crypto-intelligence')->assertRedirect(route('login'));
     }
 
-    public function test_user_can_view_normalized_multi_exchange_data(): void
+    public function test_old_crypto_intelligence_page_redirects_to_the_news_crypto_pulse(): void
     {
         $this->actingAs(User::factory()->create())
             ->get('/crypto-intelligence?symbol=BTC')
+            ->assertRedirect(route('news.index', ['symbol' => 'BTC']).'#crypto-pulse');
+    }
+
+    public function test_crypto_pulse_is_available_inside_market_intelligence(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get('/news?symbol=ETH')
             ->assertOk()
-            ->assertSee('Crypto Intelligence')
+            ->assertSee('Market News &amp; Intelligence', false)
+            ->assertSee('Crypto market pulse')
             ->assertSee('Binance')
             ->assertSee('Bybit')
             ->assertSee('OKX')
-            ->assertSee('$60,000.00')
-            ->assertSee('0.0100%');
-    }
-
-    public function test_symbol_switch_supports_ajax(): void
-    {
-        $this->actingAs(User::factory()->create())
-            ->getJson('/crypto-intelligence?symbol=ETH')
-            ->assertOk()
-            ->assertJsonPath('symbol', 'ETH')
-            ->assertJsonStructure(['html', 'symbol', 'chart' => ['labels', 'openInterest', 'funding']]);
+            ->assertSee('$60,000.00');
     }
 
     private function exchangeResponse(string $url)

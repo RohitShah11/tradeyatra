@@ -3,9 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\FinancialJuiceNews;
+use App\Models\EconomicCalendarEvent;
 use App\Services\MarketNewsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Carbon;
 use Throwable;
 use WebSocket\Client;
 
@@ -61,11 +63,14 @@ class StreamFinancialJuiceNews extends Command
                     if (($payload['type'] ?? null) === 'error') {
                         throw new \RuntimeException('FinancialJuice rejected the connection: '.($payload['message'] ?? 'unknown error'));
                     }
-                    if (($payload['type'] ?? null) !== 'news') {
+                    $type = (string) ($payload['type'] ?? '');
+                    if ($type === 'news') {
+                        $this->applyNewsEvent((string) ($payload['event'] ?? ''), $payload['data'] ?? null);
+                    } elseif ($type === 'calendar') {
+                        $this->applyCalendarEvent((string) ($payload['event'] ?? ''), $payload['data'] ?? null);
+                    } else {
                         continue;
                     }
-
-                    $this->applyNewsEvent((string) ($payload['event'] ?? ''), $payload['data'] ?? null);
                     if ($this->option('once')) {
                         return self::SUCCESS;
                     }
@@ -125,6 +130,49 @@ class StreamFinancialJuiceNews extends Command
     {
         foreach (array_keys(MarketNewsService::CATEGORIES) as $category) {
             Cache::forget("market-news:v4:{$category}");
+        }
+    }
+
+    private function applyCalendarEvent(string $event, mixed $data): void
+    {
+        if ($event === 'deleted' && (is_numeric($data) || is_string($data))) {
+            EconomicCalendarEvent::query()->where('provider', 'FinancialJuice')->where('external_id', (string) $data)->delete();
+
+            return;
+        }
+
+        if (! in_array($event, ['created', 'updated'], true) || ! is_array($data)) {
+            return;
+        }
+
+        $items = array_is_list($data) ? $data : [$data];
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $id = $item['calendarId'] ?? $item['eventId'] ?? $item['id'] ?? null;
+            $title = $item['title'] ?? $item['name'] ?? $item['event'] ?? null;
+            $scheduledAt = $item['date'] ?? $item['scheduledAt'] ?? $item['datePublished'] ?? $item['timestamp'] ?? null;
+            if (blank($id) || blank($title) || blank($scheduledAt)) {
+                continue;
+            }
+
+            EconomicCalendarEvent::query()->updateOrCreate(
+                ['provider' => 'FinancialJuice', 'external_id' => (string) $id],
+                [
+                    'title' => trim((string) $title),
+                    'currency' => strtoupper((string) ($item['currency'] ?? $item['currencyCode'] ?? '')) ?: null,
+                    'country' => $item['country'] ?? null,
+                    'impact' => strtolower((string) ($item['impact'] ?? $item['importance'] ?? '')) ?: null,
+                    'scheduled_at' => is_numeric($scheduledAt) ? Carbon::createFromTimestampMs((int) $scheduledAt) : $scheduledAt,
+                    'actual' => isset($item['actual']) ? (string) $item['actual'] : null,
+                    'forecast' => isset($item['forecast']) ? (string) $item['forecast'] : null,
+                    'previous' => isset($item['previous']) ? (string) $item['previous'] : null,
+                    'url' => filled($item['link'] ?? null) ? (string) $item['link'] : null,
+                    'payload' => $item,
+                ]
+            );
         }
     }
 }

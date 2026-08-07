@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FinancialJuiceNews;
+use App\Models\EconomicCalendarEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -111,6 +112,28 @@ class NewsTest extends TestCase
             ->assertSee('ECB&#039;s Lagarde: Rate path remains data dependent', false)
             ->assertSee('FinancialJuice')
             ->assertSee('EUR');
+    }
+
+    public function test_news_page_shows_stored_economic_calendar_events(): void
+    {
+        Http::fake(['*' => Http::response([], 404)]);
+        EconomicCalendarEvent::query()->create([
+            'provider' => 'FinancialJuice',
+            'external_id' => 'calendar-1',
+            'title' => 'US Consumer Price Index',
+            'currency' => 'USD',
+            'impact' => 'high',
+            'scheduled_at' => now()->addHour(),
+            'previous' => '2.8%',
+            'forecast' => '2.7%',
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get('/news')
+            ->assertOk()
+            ->assertSee('Economic calendar')
+            ->assertSee('US Consumer Price Index')
+            ->assertSee('2.7%');
     }
 
     private function feed(): string

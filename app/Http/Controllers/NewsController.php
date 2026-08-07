@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EconomicCalendarEvent;
+use App\Models\Trade;
+use App\Services\CryptoIntelligenceService;
 use App\Services\MarketNewsService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -9,12 +12,13 @@ use Throwable;
 
 class NewsController extends Controller
 {
-    public function index(Request $request, MarketNewsService $newsService)
+    public function index(Request $request, MarketNewsService $newsService, CryptoIntelligenceService $cryptoService)
     {
         $filters = $request->validate([
             'category' => ['nullable', 'string', 'in:all,markets,stocks,crypto,economy,forex,commodities'],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'symbol' => ['nullable', 'string', 'in:BTC,ETH'],
         ]);
 
         $category = $filters['category'] ?? 'all';
@@ -65,6 +69,25 @@ class NewsController extends Controller
             ]);
         }
 
-        return view('news.index', $viewData);
+        $symbol = $filters['symbol'] ?? 'BTC';
+        try {
+            $market = $cryptoService->snapshot($symbol);
+        } catch (Throwable $exception) {
+            report($exception);
+            $market = ['venues' => [], 'errors' => ['Crypto market data is temporarily unavailable.'], 'summary' => [
+                'price' => null, 'change_24h' => null, 'open_interest_usd' => 0, 'funding_rate' => null,
+                'volume_24h_usd' => 0, 'venues_online' => 0,
+            ], 'updated_at' => now()->toIso8601String()];
+        }
+
+        $calendar = EconomicCalendarEvent::query()
+            ->whereBetween('scheduled_at', [now()->subHours(6), now()->addDays(7)])
+            ->orderBy('scheduled_at')
+            ->limit(30)
+            ->get();
+        $trackedMarkets = Trade::query()->where('user_id', auth()->id())->latest('date')->limit(100)->pluck('pair')
+            ->map(fn ($pair) => strtoupper((string) $pair))->filter()->unique()->take(8)->values();
+
+        return view('news.index', $viewData + compact('market', 'symbol', 'calendar', 'trackedMarkets'));
     }
 }

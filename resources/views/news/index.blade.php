@@ -1,218 +1,60 @@
 @extends('layouts.app')
 
-@section('page_title', 'Market News')
-@section('page_subtitle', 'Follow market-moving stories before you plan your next trade.')
-@if($error)
-    @section('toast_error', $error)
-@endif
+@section('page_title', 'Market News & Intelligence')
+@section('page_subtitle', 'Live headlines, economic events, derivatives positioning, and context for the markets you trade.')
 
 @section('content')
 <style>
-    .news-hero { position:relative; overflow:hidden; padding:24px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
-    .news-hero:after { content:""; position:absolute; width:260px; height:260px; right:-95px; top:-140px; border-radius:50%; background:radial-gradient(circle,rgba(25,199,181,.24),transparent 68%); pointer-events:none; }
-    .news-eyebrow { display:flex; align-items:center; gap:8px; color:var(--accent-2); font-size:10px; font-weight:900; letter-spacing:.15em; text-transform:uppercase; }
-    .news-live-dot { width:8px; height:8px; border-radius:50%; background:var(--good); box-shadow:0 0 0 5px color-mix(in srgb,var(--good) 14%,transparent); }
-    .news-hero h2 { max-width:620px; margin:9px 0 6px; font-size:24px; line-height:1.25; }
-    .news-hero p { margin:0; max-width:690px; color:var(--muted); }
-    .news-hero-actions { position:relative; z-index:1; display:flex; align-items:center; gap:10px; }
-    .news-crypto-link { white-space:nowrap; display:inline-flex; align-items:center; gap:8px; min-height:47px; padding:10px 16px; border:1px solid color-mix(in srgb,var(--accent-2) 35%,var(--line)); border-radius:12px; color:var(--ink); background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--panel)),color-mix(in srgb,var(--accent-2) 12%,var(--panel))); font-size:12px; font-weight:900; transition:transform .18s ease,border-color .18s ease; }
-    .news-crypto-link:hover { transform:translateY(-2px); border-color:var(--accent-2); }
-    .news-crypto-link .icon { color:var(--accent-2); }
-    .news-count { position:relative; z-index:1; min-width:118px; padding:15px 18px; border:1px solid var(--line); border-radius:13px; text-align:center; background:color-mix(in srgb,var(--panel) 70%,transparent); }
-    .news-count strong,.news-count small { display:block; }
-    .news-count strong { font-size:24px; }
-    .news-count small { color:var(--muted); font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
-    .news-filter { display:flex; gap:12px; align-items:center; padding:14px; margin-bottom:16px; }
-    .news-search { display:flex; flex:1; min-width:220px; }
-    .news-search input { width:100%; min-height:43px; border-radius:10px 0 0 10px; }
-    .news-search button { border-radius:0 10px 10px 0; }
-    .news-categories { display:flex; gap:7px; overflow-x:auto; padding:2px 0 7px; margin-bottom:10px; scrollbar-width:thin; }
-    .news-category { white-space:nowrap; padding:8px 13px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:12px; font-weight:800; background:rgba(255,255,255,.025); }
-    .news-category:hover,.news-category.active { color:#fff; border-color:transparent; background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent-2) 78%,var(--accent))); }
-    .news-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-    .news-card { position:relative; min-height:255px; display:flex; flex-direction:column; padding:20px; overflow:hidden; transition:transform .18s ease,border-color .18s ease; }
-    .news-card:hover { transform:translateY(-3px); border-color:color-mix(in srgb,var(--accent) 40%,transparent); }
-    .news-card:before { content:""; position:absolute; inset:0 0 auto; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:.7; }
-    .news-card.featured { grid-column:span 2; min-height:300px; background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--panel)),color-mix(in srgb,var(--accent-2) 7%,var(--panel))); }
-    .news-card.featured h2 { font-size:23px; max-width:740px; }
-    .news-meta { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:10px; font-weight:750; text-transform:uppercase; letter-spacing:.06em; }
-    .news-source { color:var(--accent-2); }
-    .news-signals { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:-2px 0 14px; }
-    .news-sentiment,.news-ticker { display:inline-flex; align-items:center; min-height:23px; padding:3px 8px; border-radius:999px; font-size:9px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; }
-    .news-sentiment.bullish { color:var(--good); background:color-mix(in srgb,var(--good) 12%,transparent); border:1px solid color-mix(in srgb,var(--good) 25%,transparent); }
-    .news-sentiment.bearish { color:var(--bad); background:color-mix(in srgb,var(--bad) 11%,transparent); border:1px solid color-mix(in srgb,var(--bad) 24%,transparent); }
-    .news-sentiment.neutral { color:var(--muted); background:rgba(255,255,255,.045); border:1px solid var(--line); }
-    .news-ticker { color:var(--accent); background:var(--soft); }
-    .news-card h2 { margin:16px 0 10px; font-size:16px; line-height:1.45; }
-    .news-card p { margin:0 0 20px; color:var(--muted); font-size:12px; }
-    .news-read { margin-top:auto; display:flex; align-items:center; justify-content:space-between; color:var(--ink); font-size:12px; font-weight:900; }
-    .news-read span:last-child { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--soft); color:var(--accent); }
-    .news-empty { grid-column:1/-1; padding:48px 24px; text-align:center; }
-    .news-empty svg { width:38px; height:38px; color:var(--muted); margin-bottom:12px; }
-    .news-pagination { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:20px; }
-    .news-pagination .disabled { opacity:.4; pointer-events:none; }
-    .news-page-state { color:var(--muted); font-size:12px; }
-    .news-results-shell { position:relative; min-height:180px; }
-    .news-results { transition:opacity .16s ease,transform .16s ease,filter .16s ease; }
-    .news-results.loading { opacity:.45; transform:translateY(4px); pointer-events:none; }
-    .news-loader { position:absolute; z-index:8; top:22px; left:50%; display:flex; align-items:center; gap:11px; min-width:190px; padding:12px 17px; border:1px solid color-mix(in srgb,var(--accent) 36%,var(--line)); border-radius:999px; color:var(--ink); background:color-mix(in srgb,var(--panel) 94%,transparent); box-shadow:0 16px 45px rgba(0,0,0,.28); backdrop-filter:blur(14px); opacity:0; visibility:hidden; transform:translate(-50%,-8px); transition:opacity .16s ease,transform .16s ease,visibility .16s; pointer-events:none; }
-    .news-loader.active { opacity:1; visibility:visible; transform:translate(-50%,0); }
-    .news-loader-spinner { width:20px; height:20px; flex:0 0 20px; border:2px solid color-mix(in srgb,var(--accent) 22%,transparent); border-top-color:var(--accent); border-right-color:var(--accent-2); border-radius:50%; animation:news-spin .7s linear infinite; }
-    .news-loader strong,.news-loader small { display:block; line-height:1.15; }
-    .news-loader strong { font-size:11px; }
-    .news-loader small { margin-top:3px; color:var(--muted); font-size:9px; }
-    @keyframes news-spin { to { transform:rotate(360deg); } }
-    @media(prefers-reduced-motion:reduce) { .news-loader-spinner { animation-duration:1.5s; } }
-    .news-ajax-error { padding:16px; margin-bottom:14px; color:var(--bad); border:1px solid color-mix(in srgb,var(--bad) 30%,transparent); border-radius:12px; background:color-mix(in srgb,var(--bad) 8%,transparent); }
-    @media(max-width:1080px) { .news-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media(max-width:680px) { .news-hero { align-items:flex-start; flex-direction:column; } .news-count { display:none; } .news-hero-actions { width:100%; } .news-crypto-link { width:100%; justify-content:center; } .news-filter { align-items:stretch; flex-direction:column; } .news-grid { grid-template-columns:1fr; } .news-card.featured { grid-column:span 1; min-height:255px; } }
+    .intel-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:24px;margin-bottom:16px}.intel-hero:after{content:"";position:absolute;width:330px;height:330px;right:-130px;top:-190px;border-radius:50%;background:radial-gradient(circle,rgba(24,199,255,.22),transparent 68%);pointer-events:none}.intel-eyebrow,.intel-live{display:flex;align-items:center;gap:8px;color:var(--accent-2);font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.intel-live:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 5px color-mix(in srgb,var(--good) 14%,transparent)}.intel-hero h2{margin:9px 0 6px;font-size:25px}.intel-hero p{max-width:720px;margin:0;color:var(--muted)}.intel-count{position:relative;z-index:1;min-width:125px;padding:15px 18px;border:1px solid var(--line);border-radius:13px;text-align:center;background:color-mix(in srgb,var(--panel) 75%,transparent)}.intel-count strong,.intel-count small{display:block}.intel-count strong{font-size:25px}.intel-count small{color:var(--muted);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.1em}.intel-nav{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:10px}.intel-nav a{white-space:nowrap;padding:9px 13px;border-radius:9px;color:var(--muted);font-size:11px;font-weight:900}.intel-nav a:hover{color:var(--ink);background:var(--soft)}.intel-section{scroll-margin-top:90px;margin-bottom:18px}.intel-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:11px}.intel-head h2{margin:0;font-size:18px}.intel-head p{margin:3px 0 0;color:var(--muted);font-size:11px}.intel-filter{display:flex;gap:10px;align-items:center;padding:13px;margin-bottom:10px}.intel-search{display:flex;flex:1}.intel-search input{width:100%;min-height:42px;border-radius:9px 0 0 9px}.intel-search button{border-radius:0 9px 9px 0}.news-categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px}.news-category{white-space:nowrap;padding:7px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:850}.news-category.active,.news-category:hover{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-2))}.news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.news-card{position:relative;min-height:245px;display:flex;flex-direction:column;padding:18px;overflow:hidden}.news-card:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2));opacity:.75}.news-card.featured{grid-column:span 2;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 11%,var(--panel)),color-mix(in srgb,var(--accent-2) 7%,var(--panel)))}.news-meta{display:flex;gap:7px;color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase}.news-source{color:var(--accent-2)}.news-card h2{margin:15px 0 9px;font-size:16px;line-height:1.4}.news-card p{margin:0 0 17px;color:var(--muted);font-size:11px}.news-signals{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.news-sentiment,.news-ticker{padding:3px 7px;border-radius:999px;font-size:8px;font-weight:900;text-transform:uppercase}.news-sentiment.bullish{color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}.news-sentiment.bearish{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}.news-sentiment.neutral{color:var(--muted);background:rgba(255,255,255,.045)}.news-ticker{color:var(--accent);background:var(--soft)}.news-read{display:flex;justify-content:space-between;margin-top:auto;font-size:11px;font-weight:900}.news-empty{grid-column:1/-1;padding:40px;text-align:center}.news-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px}.news-page-state{color:var(--muted);font-size:11px}.pulse-toolbar{display:flex;gap:8px}.pulse-symbol{padding:7px 12px;border:1px solid var(--line);border-radius:9px;color:var(--muted);font-weight:900}.pulse-symbol.active{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-2))}.pulse-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}.pulse-stat{padding:17px}.pulse-stat small{display:block;color:var(--muted);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.1em}.pulse-stat strong{display:block;margin-top:7px;font-size:20px}.positive{color:var(--good)}.negative{color:var(--bad)}.pulse-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:12px}.pulse-table,.calendar-table{padding:17px}.pulse-table table th,.pulse-table table td,.calendar-table table th,.calendar-table table td{white-space:nowrap}.market-read{padding:18px}.market-read strong{display:block;font-size:16px}.market-read p{color:var(--muted);font-size:11px}.tracked{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.tracked span{padding:6px 9px;border:1px solid var(--line);border-radius:999px;color:var(--accent-2);font-size:9px;font-weight:900}.calendar-impact{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:900;text-transform:uppercase}.calendar-impact.high{color:var(--bad);background:color-mix(in srgb,var(--bad) 11%,transparent)}.calendar-impact.medium{color:var(--warn);background:color-mix(in srgb,var(--warn) 11%,transparent)}.calendar-impact.low{color:var(--muted);background:rgba(255,255,255,.045)}.intel-note,.intel-warning{padding:12px 14px;border-radius:10px;font-size:10px}.intel-note{border:1px solid var(--line);color:var(--muted)}.intel-warning{margin-bottom:10px;border:1px solid color-mix(in srgb,var(--warn) 28%,transparent);color:var(--warn)}.news-results.loading{opacity:.4;pointer-events:none}.news-ajax-error{margin-bottom:10px;padding:12px;color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);border-radius:10px}.disabled{opacity:.4;pointer-events:none}@media(max-width:1000px){.news-grid{grid-template-columns:repeat(2,1fr)}.pulse-stats{grid-template-columns:repeat(2,1fr)}.pulse-layout{grid-template-columns:1fr}}@media(max-width:650px){.intel-hero{grid-template-columns:1fr}.intel-count{display:none}.intel-filter,.intel-head{align-items:stretch;flex-direction:column}.news-grid,.pulse-stats{grid-template-columns:1fr}.news-card.featured{grid-column:span 1}}
 </style>
 
-<section class="panel news-hero">
-    <div>
-        <div class="news-eyebrow"><span class="news-live-dot"></span>Live market intelligence</div>
-        <h2>News that can shape your trading day</h2>
-        <p>Scan the latest financial headlines, then open the original publisher for the complete story.</p>
-    </div>
-    <div class="news-hero-actions">
-        <a class="news-crypto-link" href="{{ route('crypto-intelligence.index') }}"><svg class="icon"><use href="#icon-market"></use></svg>Crypto Intelligence <span aria-hidden="true">→</span></a>
-        <div class="news-count"><strong id="newsCount">{{ number_format($articles->total()) }}</strong><small>Headlines</small></div>
+<section class="panel intel-hero">
+    <div><div class="intel-eyebrow"><span class="intel-live">Live data</span></div><h2>One view for the events moving your markets</h2><p>Follow breaking headlines, upcoming macro risk, and live crypto derivatives positioning without leaving your journal.</p></div>
+    <div class="intel-count"><strong id="newsCount">{{ number_format($articles->total()) }}</strong><small>Headlines</small></div>
+</section>
+
+<nav class="panel intel-nav" aria-label="Market intelligence sections"><a href="#breaking-news">Breaking news</a><a href="#economic-calendar">Economic calendar</a><a href="#crypto-pulse">Crypto pulse</a><a href="#my-markets">My markets</a></nav>
+
+<section class="intel-section" id="breaking-news">
+    <div class="intel-head"><div><h2>Breaking market news</h2><p>FinancialJuice when configured, Alpha Vantage, and Google News fallback.</p></div></div>
+    <form class="panel intel-filter" method="GET" action="{{ route('news.index') }}"><input type="hidden" name="category" value="{{ $category }}"><input type="hidden" name="symbol" value="{{ $symbol }}"><div class="intel-search"><input type="search" name="q" value="{{ $query }}" placeholder="Search headlines, topics or sources…"><button class="btn" type="submit">Search</button></div>@if($query !== '')<a id="newsClear" class="btn secondary" href="{{ route('news.index',['category'=>$category,'symbol'=>$symbol]) }}">Clear</a>@endif</form>
+    <nav class="news-categories" aria-label="News categories">@foreach($categories as $slug=>$label)<a class="news-category {{ $category===$slug?'active':'' }}" href="{{ route('news.index',array_filter(['category'=>$slug,'q'=>$query,'symbol'=>$symbol])) }}">{{ $label }}</a>@endforeach</nav>
+    @if($error)<div class="news-ajax-error">{{ $error }}</div>@endif
+    <div id="newsResults" class="news-results" aria-live="polite">@include('news._results')</div>
+</section>
+
+<section class="intel-section" id="economic-calendar">
+    <div class="intel-head"><div><h2>Economic calendar</h2><p>Upcoming macro events from the FinancialJuice calendar stream.</p></div><span class="intel-live">Auto-updated</span></div>
+    <div class="panel calendar-table"><div class="table-wrap"><table><thead><tr><th>Time</th><th>Currency</th><th>Impact</th><th>Event</th><th>Previous</th><th>Forecast</th><th>Actual</th></tr></thead><tbody>
+        @forelse($calendar as $event)
+            @php($localEvent=$event->scheduled_at->copy()->timezone(auth()->user()->timezone ?: config('app.timezone')))
+            <tr><td><strong>{{ $localEvent->format('d M, H:i') }}</strong><br><small class="muted">{{ $event->scheduled_at->isFuture()?$event->scheduled_at->diffForHumans():'Released' }}</small></td><td><strong>{{ $event->currency ?: 'Global' }}</strong></td><td><span class="calendar-impact {{ in_array($event->impact,['high','medium','low'])?$event->impact:'low' }}">{{ $event->impact ?: 'Info' }}</span></td><td>{{ $event->title }}</td><td>{{ $event->previous ?? '—' }}</td><td>{{ $event->forecast ?? '—' }}</td><td>{{ $event->actual ?? '—' }}</td></tr>
+        @empty
+            <tr><td colspan="7"><div class="intel-note">No calendar events have been stored yet. Configure the FinancialJuice API key and keep <code>php artisan news:stream-financial-juice</code> running under Supervisor to populate this calendar.</div></td></tr>
+        @endforelse
+    </tbody></table></div></div>
+</section>
+
+@php($summary=$market['summary'])
+<section class="intel-section" id="crypto-pulse">
+    <div class="intel-head"><div><h2>Crypto market pulse</h2><p>Real public derivatives data aggregated across Binance, Bybit, and OKX.</p></div><div class="pulse-toolbar">@foreach(['BTC','ETH'] as $asset)<a class="pulse-symbol {{ $symbol===$asset?'active':'' }}" href="{{ route('news.index',['symbol'=>$asset,'category'=>$category,'q'=>$query]).'#crypto-pulse' }}">{{ $asset }}</a>@endforeach</div></div>
+    @foreach($market['errors'] as $message)<div class="intel-warning">{{ $message }}</div>@endforeach
+    <div class="pulse-stats"><div class="panel pulse-stat"><small>{{ $symbol }} average price</small><strong>{{ $summary['price']?'$'.number_format($summary['price'],2):'Unavailable' }}</strong></div><div class="panel pulse-stat"><small>Average 24h move</small><strong class="{{ ($summary['change_24h']??0)>=0?'positive':'negative' }}">{{ $summary['change_24h']!==null?number_format($summary['change_24h'],2).'%':'Unavailable' }}</strong></div><div class="panel pulse-stat"><small>Combined open interest</small><strong>${{ number_format(($summary['open_interest_usd']??0)/1000000000,2) }}B</strong></div><div class="panel pulse-stat"><small>Average funding</small><strong class="{{ ($summary['funding_rate']??0)>=0?'positive':'negative' }}">{{ $summary['funding_rate']!==null?number_format($summary['funding_rate']*100,4).'%':'Unavailable' }}</strong></div></div>
+    <div class="pulse-layout"><div class="panel pulse-table"><div class="table-wrap"><table><thead><tr><th>Venue</th><th>Price</th><th>24h</th><th>Funding</th><th>Open interest</th><th>Volume</th></tr></thead><tbody>@forelse($market['venues'] as $venue)<tr><td><strong>{{ $venue['exchange'] }}</strong></td><td>${{ number_format($venue['price'],2) }}</td><td class="{{ $venue['change_24h']>=0?'positive':'negative' }}">{{ number_format($venue['change_24h'],2) }}%</td><td class="{{ $venue['funding_rate']>=0?'positive':'negative' }}">{{ number_format($venue['funding_rate']*100,4) }}%</td><td>${{ number_format($venue['open_interest_usd']/1000000,1) }}M</td><td>${{ number_format($venue['volume_24h_usd']/1000000000,2) }}B</td></tr>@empty<tr><td colspan="6">Market data unavailable.</td></tr>@endforelse</tbody></table></div></div>
+        <aside class="panel market-read"><small class="muted">How to read this</small><strong>{{ ($summary['funding_rate']??0)>0?'Long positioning is paying short positioning':(($summary['funding_rate']??0)<0?'Short positioning is paying long positioning':'Positioning is balanced') }}</strong><p>Funding and open interest describe positioning, not a prediction. Confirm the signal with price structure and your risk plan.</p><div class="intel-note">Updated {{ \Illuminate\Support\Carbon::parse($market['updated_at'])->diffForHumans() }} · read-only data</div></aside>
     </div>
 </section>
 
-<form class="panel news-filter" method="GET" action="{{ route('news.index') }}">
-    <input type="hidden" name="category" value="{{ $category }}">
-    <div class="news-search">
-        <input type="search" name="q" value="{{ $query }}" placeholder="Search headlines, topics or sources…" aria-label="Search market news">
-        <button class="btn" type="submit">Search</button>
-    </div>
-    <a id="newsClear" class="btn secondary" href="{{ route('news.index', ['category' => $category]) }}" @if($query === '') hidden @endif>Clear</a>
-</form>
-
-<nav class="news-categories" aria-label="News categories">
-    @foreach($categories as $slug => $label)
-        <a class="news-category {{ $category === $slug ? 'active' : '' }}" href="{{ route('news.index', array_filter(['category' => $slug, 'q' => $query])) }}">{{ $label }}</a>
-    @endforeach
-</nav>
-
-<div class="news-results-shell">
-    <div id="newsLoader" class="news-loader" role="status" aria-live="polite" aria-hidden="true">
-        <span class="news-loader-spinner" aria-hidden="true"></span>
-        <span><strong>Updating headlines</strong><small>Fetching the latest market news…</small></span>
-    </div>
-    <div id="newsResults" class="news-results" aria-live="polite">@include('news._results')</div>
-</div>
-
-@if(false)
-<div class="news-grid">
-    @forelse($articles as $article)
-        <article class="panel news-card {{ $loop->first && $articles->currentPage() === 1 ? 'featured' : '' }}">
-            <div class="news-meta">
-                <span class="news-source">{{ $article['source'] }}</span><span>•</span>
-                <time datetime="{{ $article['published_at'] }}">{{ \Illuminate\Support\Carbon::parse($article['published_at'])->diffForHumans() }}</time>
-            </div>
-            <h2>{{ $article['title'] }}</h2>
-            @if(($article['sentiment'] ?? null) || !empty($article['tickers'] ?? []))
-                <div class="news-signals" aria-label="Article trading signals">
-                    @if($article['sentiment'] ?? null)
-                        <span class="news-sentiment {{ $article['sentiment'] }}" title="Alpha Vantage article sentiment{{ isset($article['sentiment_score']) ? ': '.number_format($article['sentiment_score'], 3) : '' }}">{{ $article['sentiment'] }}</span>
-                    @endif
-                    @foreach(($article['tickers'] ?? []) as $ticker)<span class="news-ticker">{{ $ticker }}</span>@endforeach
-                </div>
-            @endif
-            @if($article['description'])<p>{{ $article['description'] }}</p>@endif
-            <a class="news-read" href="{{ $article['url'] }}" target="_blank" rel="noopener noreferrer"><span>Read full story</span><span aria-hidden="true">↗</span></a>
-        </article>
-    @empty
-        <div class="panel news-empty">
-            <svg class="icon"><use href="#icon-news"></use></svg>
-            <h2>No headlines found</h2>
-            <p class="muted">{{ $query ? 'Try a broader search or another category.' : 'Live headlines could not be loaded right now. Please try again.' }}</p>
-        </div>
-    @endforelse
-</div>
-
-@if($articles->hasPages())
-    <nav class="news-pagination" aria-label="News pages">
-        <a class="btn secondary {{ $articles->onFirstPage() ? 'disabled' : '' }}" href="{{ $articles->previousPageUrl() ?: '#' }}">Previous</a>
-        <span class="news-page-state">Page {{ $articles->currentPage() }} of {{ $articles->lastPage() }}</span>
-        <a class="btn secondary {{ $articles->hasMorePages() ? '' : 'disabled' }}" href="{{ $articles->nextPageUrl() ?: '#' }}">Next</a>
-    </nav>
-@endif
-@endif
+<section class="intel-section" id="my-markets"><div class="intel-head"><div><h2>Relevant to my trades</h2><p>Your recently traded markets, ready for personalized event matching.</p></div></div><div class="panel market-read"><strong>Markets found in your journal</strong><div class="tracked">@forelse($trackedMarkets as $pair)<span>{{ $pair }}</span>@empty<span>No trades recorded yet</span>@endforelse</div><p>News ticker labels and calendar currencies can now be compared with these markets. The next enhancement can place relevant economic-event markers directly on each saved trade chart.</p></div></section>
 
 <script>
 (() => {
-    const form = document.querySelector('.news-filter');
-    const results = document.getElementById('newsResults');
-    const loader = document.getElementById('newsLoader');
-    const count = document.getElementById('newsCount');
-    const clear = document.getElementById('newsClear');
-    const search = form?.querySelector('input[name="q"]');
-    const categoryInput = form?.querySelector('input[name="category"]');
-    let activeRequest;
-
-    if (!form || !results) return;
-
-    const syncControls = (url, data) => {
-        const params = new URL(url).searchParams;
-        const category = data.category || params.get('category') || 'all';
-        categoryInput.value = category;
-        search.value = data.query ?? params.get('q') ?? '';
-        clear.hidden = search.value === '';
-        clear.href = `{{ route('news.index') }}?category=${encodeURIComponent(category)}`;
-        count.textContent = new Intl.NumberFormat().format(data.total || 0);
-        document.querySelectorAll('.news-category').forEach(link => {
-            link.classList.toggle('active', (new URL(link.href).searchParams.get('category') || 'all') === category);
-        });
-    };
-
-    const loadNews = async (target, push = true) => {
-        activeRequest?.abort();
-        activeRequest = new AbortController();
-        const url = new URL(target, window.location.href);
-        results.classList.add('loading');
-        results.setAttribute('aria-busy', 'true');
-        loader.classList.add('active');
-        loader.setAttribute('aria-hidden', 'false');
-
-        try {
-            const response = await fetch(url, {
-                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                signal: activeRequest.signal,
-            });
-            if (!response.ok) throw new Error('Unable to load market news.');
-            const data = await response.json();
-            results.innerHTML = data.error ? `<div class="news-ajax-error">${data.error}</div>${data.html}` : data.html;
-            syncControls(url, data);
-            if (push) history.pushState({}, '', url);
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                results.insertAdjacentHTML('afterbegin', '<div class="news-ajax-error">Could not refresh the headlines. Please try again.</div>');
-            }
-        } finally {
-            results.classList.remove('loading');
-            results.removeAttribute('aria-busy');
-            loader.classList.remove('active');
-            loader.setAttribute('aria-hidden', 'true');
-        }
-    };
-
-    form.addEventListener('submit', event => {
-        event.preventDefault();
-        const url = new URL(form.action);
-        new FormData(form).forEach((value, key) => { if (value) url.searchParams.set(key, value); });
-        loadNews(url);
-    });
-
-    document.addEventListener('click', event => {
-        const link = event.target.closest('.news-category, #newsClear, .news-pagination a:not(.disabled)');
-        if (!link) return;
-        event.preventDefault();
-        loadNews(link.href);
-    }, { signal: window.tradeYatraNavigationSignal });
-
-    window.addEventListener('popstate', () => loadNews(window.location.href, false), { signal: window.tradeYatraNavigationSignal });
+    const results=document.getElementById('newsResults');
+    const count=document.getElementById('newsCount');
+    const load=async url=>{results.classList.add('loading');try{const response=await fetch(url,{headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error();const data=await response.json();results.innerHTML=data.html;count.textContent=new Intl.NumberFormat().format(data.total);document.querySelector('input[name="category"]').value=data.category;document.querySelectorAll('.news-category').forEach(link=>link.classList.toggle('active',new URL(link.href).searchParams.get('category')===data.category));history.pushState({},'',url);}catch(e){results.insertAdjacentHTML('afterbegin','<div class="news-ajax-error">Could not refresh headlines. Please try again.</div>');}finally{results.classList.remove('loading')}};
+    document.querySelector('.intel-filter')?.addEventListener('submit',event=>{event.preventDefault();load(`${event.currentTarget.action}?${new URLSearchParams(new FormData(event.currentTarget))}`)});
+    document.querySelectorAll('.news-category').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();load(link.href)}));
+    results?.addEventListener('click',event=>{const link=event.target.closest('.news-pagination a:not(.disabled)');if(link){event.preventDefault();load(link.href)}});
 })();
 </script>
 @endsection
