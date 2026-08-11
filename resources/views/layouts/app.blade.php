@@ -697,7 +697,12 @@
             </div>
             <div class="nav-group">
                 <div class="nav-label">Account</div>
-                @php($supportUnread = auth()->user()->supportTickets()->sum('user_unread_count'))
+                @php($chatUnread = auth()->user()->supportTickets()->where('category','chat')->sum('user_unread_count'))
+                <a class="{{ request()->routeIs('messages.*') ? 'active' : '' }}" href="{{ route('messages.show') }}" wire:navigate.hover data-message-nav>
+                    <span class="nav-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.3-4.4A8.5 8.5 0 1 1 21 12Z"></path></svg></span>Messages
+                    @if($chatUnread)<span class="nav-count" data-message-count>{{ min($chatUnread,99) }}</span>@else<span class="nav-arrow">›</span>@endif
+                </a>
+                @php($supportUnread = auth()->user()->supportTickets()->where('category','!=','chat')->sum('user_unread_count'))
                 <a class="{{ request()->routeIs('support.*') ? 'active' : '' }}" href="{{ route('support.index') }}" wire:navigate.hover>
                     <span class="nav-icon"><svg class="icon"><use href="#icon-news"></use></svg></span>Support
                     @if($supportUnread)
@@ -743,7 +748,7 @@
                 <div class="muted">@yield('page_subtitle', 'Plan, import, review, and improve every trade.')</div>
             </div>
             <div class="actions">
-                @unless(request()->routeIs('support.*'))
+                @unless(request()->routeIs('support.*') || request()->routeIs('messages.*'))
                 <details class="sync-menu">
                     <summary class="btn secondary"><svg class="icon"><use href="#icon-sync"></use></svg>Sync exchanges<svg class="icon sync-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"></path></svg></summary>
                     <div class="sync-menu-popover">
@@ -760,6 +765,7 @@
     </main>
 </div>
 @auth
+@unless(request()->routeIs('messages.*'))
 <button class="ai-chat-backdrop" id="aiChatBackdrop" type="button" aria-label="Close AI chat"></button>
 <aside class="ai-chat-panel" id="aiChatPanel" aria-label="Yatra AI" aria-hidden="true"
     data-index-url="{{ route('ai-chat.index') }}"
@@ -1093,5 +1099,70 @@ document.addEventListener('keydown', (event) => {
 }, { signal: window.tradeYatraNavigationSignal });
 })();
 </script>
+@include('partials.user-presence')
+@auth
+<style>.chat-launcher{position:fixed;z-index:65;left:24px;bottom:24px;width:58px;height:58px;padding:0;border:0;display:grid;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(135deg,#ff7a1a,#e94b08);box-shadow:0 14px 38px rgba(255,122,26,.38);cursor:pointer;transition:transform .18s ease}.chat-launcher:hover{transform:translateY(-3px) scale(1.03)}.chat-launcher svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:2}.chat-launcher .nav-count{position:absolute;right:-3px;top:-3px}.chat-launcher-label{position:absolute;left:68px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;color:var(--ink);background:var(--panel);font-size:11px;font-weight:800;white-space:nowrap}.chat-modal-backdrop{position:fixed;z-index:89;inset:0;border:0;background:rgba(1,7,12,.66);backdrop-filter:blur(4px)}.chat-modal{position:fixed;z-index:90;left:24px;bottom:94px;width:min(440px,calc(100vw - 48px));height:min(680px,calc(100vh - 125px));overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 28px 90px rgba(0,0,0,.42);transform-origin:left bottom;animation:chat-modal-in .18s ease-out}.chat-modal-close{position:absolute;z-index:3;right:13px;top:13px;width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:color-mix(in srgb,var(--panel) 92%,transparent);cursor:pointer}.chat-modal-close svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2}.chat-modal-body,.chat-modal-body>.messenger-wrap,.chat-modal-body .chat-shell{height:100%}.chat-modal-body .messenger-wrap{margin:0}.chat-modal-body .chat-shell{min-height:0;border:0;border-radius:0;box-shadow:none}.chat-modal-loading{height:100%;display:grid;place-items:center;color:var(--muted);font-weight:800}.chat-modal-error{max-width:280px;margin:auto;text-align:center}.chat-modal[hidden],.chat-modal-backdrop[hidden]{display:none}@keyframes chat-modal-in{from{opacity:0;transform:translateY(12px) scale(.97)}}@media(max-width:680px){.chat-launcher{left:16px;bottom:16px}.chat-launcher-label{display:none}.chat-modal{inset:0;width:100%;height:100dvh;border:0;border-radius:0}.chat-modal-backdrop{display:none}}</style>
+<style>.chat-launcher{width:48px;height:48px}.chat-launcher svg{width:23px;height:23px}.chat-launcher .nav-count{background:#1687e8}.chat-modal{bottom:82px}@media(max-width:680px){.chat-modal{bottom:0}}</style>
+<button class="chat-launcher" type="button" aria-label="Open messages" aria-controls="chatModal" aria-expanded="false" title="Chat with TradeYatra" data-chat-open>
+    <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.3-4.4A8.5 8.5 0 1 1 21 12Z"></path></svg>
+    @if($chatUnread ?? 0)<span class="nav-count" data-message-count>{{ min($chatUnread,99) }}</span>@endif
+</button>
+<button class="chat-modal-backdrop" type="button" hidden aria-label="Close chat" data-chat-close></button>
+<section class="chat-modal" id="chatModal" hidden role="dialog" aria-modal="true" aria-label="Chat with TradeYatra">
+    <button class="chat-modal-close" type="button" aria-label="Close chat" data-chat-close><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
+    <div class="chat-modal-body"><div class="chat-modal-loading">Opening conversation…</div></div>
+</section>
+@include('support._messenger_ajax')
+@include('partials.message-notifications')
+<script>
+(() => {
+    const modal = document.getElementById('chatModal');
+    const body = modal?.querySelector('.chat-modal-body');
+    const launcher = document.querySelector('[data-chat-open]');
+    const backdrop = document.querySelector('.chat-modal-backdrop');
+    const messagesUrl = @json(route('messages.show'));
+    let loaded = false;
+
+    const loadChat = async (background = false) => {
+        if (!body || (background && body.querySelector('textarea[name="message"]')?.value.trim())) return;
+        try {
+            const response = await fetch(messagesUrl, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'text/html'},cache:'no-store'});
+            if (!response.ok) throw new Error();
+            const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const messenger = page.querySelector('.messenger-wrap');
+            if (!messenger) throw new Error();
+            if (!document.getElementById('chatMessengerStyles')) {
+                const sourceStyle = [...page.querySelectorAll('style')].find(style => style.textContent.includes('.messenger-wrap'));
+                if (sourceStyle) { const style = document.createElement('style'); style.id = 'chatMessengerStyles'; style.textContent = sourceStyle.textContent; document.head.appendChild(style); }
+            }
+            if (background) {
+                const incoming = messenger.querySelector('.ticket-layout');
+                const current = body.querySelector('.ticket-layout');
+                if (incoming && current && incoming.innerHTML !== current.innerHTML) current.replaceWith(incoming);
+            } else {
+                body.replaceChildren(messenger);
+            }
+            loaded = true;
+            const scroller = body.querySelector('.ticket-layout');
+            if (scroller) scroller.scrollTop = scroller.scrollHeight;
+        } catch (_) {
+            if (!background) body.innerHTML = '<div class="chat-modal-loading"><div class="chat-modal-error">Chat could not be opened. <a href="'+messagesUrl+'">Open the Messages page</a></div></div>';
+        }
+    };
+
+    const setOpen = async (open) => {
+        modal.hidden = !open; backdrop.hidden = !open; launcher.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('chat-modal-open', open);
+        if (open) { if (!loaded) await loadChat(); modal.querySelector('textarea[name="message"]')?.focus(); }
+    };
+
+    launcher?.addEventListener('click', () => setOpen(true));
+    document.querySelectorAll('[data-chat-close]').forEach(button => button.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.hidden) setOpen(false); });
+    window.setInterval(() => { if (!modal.hidden && loaded) loadChat(true); }, 12000);
+})();
+</script>
+@endunless
+@endauth
 </body>
 </html>

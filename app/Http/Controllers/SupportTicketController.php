@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SupportTicket;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,12 +26,70 @@ class SupportTicketController extends Controller
     {
         $status = (string) $request->query('status');
         $tickets = $request->user()->supportTickets()
+            ->where('category', '!=', 'chat')
             ->when(in_array($status, ['open', 'waiting_on_support', 'waiting_on_user', 'resolved', 'closed'], true), fn ($query) => $query->where('status', $status))
             ->latest('last_replied_at')
             ->paginate(15)
             ->withQueryString();
 
         return view('support.index', compact('tickets', 'status'));
+    }
+
+    public function chat(Request $request): View
+    {
+        $ticket = $request->user()->supportTickets()
+            ->where('category', 'chat')
+            ->latest('last_replied_at')
+            ->first();
+
+        if ($ticket) {
+            if ($ticket->user_unread_count > 0) {
+                $ticket->update(['user_unread_count' => 0]);
+            }
+            $ticket->load(['messages' => fn ($query) => $query->oldest(), 'assignedAdmin']);
+        }
+
+        return view('messages.show', compact('ticket'));
+    }
+
+    public function unreadChatCount(Request $request): JsonResponse
+    {
+        $count = (int) $request->user()->supportTickets()
+            ->where('category', 'chat')
+            ->sum('user_unread_count');
+
+        return response()->json(['count' => $count]);
+    }
+
+    public function startChat(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['message' => ['required', 'string', 'max:5000']]);
+        $user = $request->user();
+
+        $ticket = DB::transaction(function () use ($data, $user) {
+            $ticket = $user->supportTickets()->where('category', 'chat')->latest('last_replied_at')->lockForUpdate()->first();
+            if (! $ticket) {
+                $ticket = SupportTicket::query()->create([
+                    'ticket_number' => $this->ticketNumber(),
+                    'user_id' => $user->id,
+                    'subject' => 'Direct chat',
+                    'category' => 'chat',
+                    'priority' => 'normal',
+                    'status' => 'waiting_on_support',
+                    'admin_unread_count' => 1,
+                    'last_replied_at' => now(),
+                    'last_replied_by' => 'user',
+                ]);
+            } else {
+                $ticket->update(['status' => 'waiting_on_support', 'last_replied_at' => now(), 'last_replied_by' => 'user']);
+                $ticket->increment('admin_unread_count');
+            }
+            $ticket->messages()->create(['sender_type' => 'user', 'sender_id' => $user->id, 'body' => $data['message']]);
+
+            return $ticket;
+        });
+
+        return redirect()->route('messages.show');
     }
 
     public function create(): View
@@ -70,7 +129,9 @@ class SupportTicketController extends Controller
     public function show(Request $request, SupportTicket $supportTicket): View
     {
         $this->ensureOwner($request, $supportTicket);
-        $supportTicket->update(['user_unread_count' => 0]);
+        if ($supportTicket->user_unread_count > 0) {
+            $supportTicket->update(['user_unread_count' => 0]);
+        }
         $supportTicket->load(['messages' => fn ($query) => $query->oldest(), 'assignedAdmin']);
 
         return view('support.show', compact('supportTicket'));
@@ -92,6 +153,10 @@ class SupportTicketController extends Controller
             ]);
             $supportTicket->increment('admin_unread_count');
         });
+
+        if ($supportTicket->category === 'chat' && $request->ajax()) {
+            return redirect()->route('messages.show');
+        }
 
         return back()->with('success', 'Your reply was sent.');
     }

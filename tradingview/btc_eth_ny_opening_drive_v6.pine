@@ -1,0 +1,252 @@
+//@version=6
+strategy("TradeYatra BTC/ETH NY Opening Drive [Research]", shorttitle = "TY NY Drive", overlay = true, initial_capital = 100000, currency = currency.USD, pyramiding = 0, commission_type = strategy.commission.percent, commission_value = 0.059, slippage = 0, margin_long = 50, margin_short = 50, process_orders_on_close = false)
+
+// This is a research strategy, not a promise of profit. Use standard 15-minute
+// candles. The default 0.059% commission per fill approximates Delta Exchange
+// India's 0.05% taker fee plus 18% GST. Set realistic slippage in the strategy's
+// Properties tab. A maker-entry/taker-exit fee approximation is 0.0413% per fill.
+
+// =============================================================================
+// Inputs
+// =============================================================================
+
+timezoneInput = input.string(
+     "America/New_York",
+     "Session timezone",
+     tooltip = "Keep America/New_York to handle U.S. daylight-saving changes automatically.",
+     group = "Signal"
+ )
+tradingDaysInput = input.string(
+     "1234567",
+     "Trading days",
+     options = ["1234567", "23456"],
+     tooltip = "1234567 = every day (matches the research). 23456 = Monday-Friday only.",
+     group = "Signal"
+ )
+atrLengthInput = input.int(14, "ATR length", minval = 2, group = "Signal")
+minimumScoreInput = input.float(
+     1.25,
+     "Minimum opening-drive score",
+     minval = 0.25,
+     step = 0.05,
+     tooltip = "abs(09:45 close - 09:30 open) / (ATR * sqrt(2)).",
+     group = "Signal"
+ )
+allowLongInput = input.bool(true, "Allow long trades", inline = "direction", group = "Signal")
+allowShortInput = input.bool(true, "Allow short trades", inline = "direction", group = "Signal")
+
+riskPercentInput = input.float(
+     0.25,
+     "Equity risk per trade (%)",
+     minval = 0.01,
+     maxval = 2.0,
+     step = 0.05,
+     tooltip = "Paper-test at 0.25%. The research used 0.50%.",
+     group = "Risk and exits"
+ )
+stopAtrInput = input.float(2.0, "Stop distance (ATR)", minval = 0.25, step = 0.25, group = "Risk and exits")
+rewardRiskInput = input.float(2.0, "Reward/risk target", minval = 0.5, step = 0.25, group = "Risk and exits")
+maxNotionalInput = input.float(
+     2.0,
+     "Maximum notional / equity",
+     minval = 0.1,
+     maxval = 10.0,
+     step = 0.1,
+     tooltip = "Caps position value independently of the exchange's available leverage.",
+     group = "Risk and exits"
+ )
+
+useComparisonInput = input.bool(
+     false,
+     "Trade only when this chart has the stronger score",
+     tooltip = "Enable to approximate the one-BTC-or-ETH-trade portfolio rule.",
+     group = "BTC/ETH selection"
+ )
+comparisonSymbolInput = input.symbol(
+     "BINANCE:ETHUSDT",
+     "Comparison symbol",
+     tooltip = "On BTC, select a matching ETH market. On ETH, select a matching BTC market. Prefer the same exchange and contract type.",
+     group = "BTC/ETH selection"
+ )
+
+startDateInput = input.time(timestamp("29 Dec 2023 00:00 +0000"), "Start date", group = "Backtest window")
+endDateInput = input.time(timestamp("31 Dec 2099 23:59 +0000"), "End date", group = "Backtest window")
+
+showOpeningWindowInput = input.bool(true, "Shade 09:30-10:00 window", group = "Display")
+showLevelsInput = input.bool(true, "Plot active stop and target", group = "Display")
+showSignalsInput = input.bool(true, "Show eligible signals", group = "Display")
+showStatusInput = input.bool(true, "Show status table", group = "Display")
+
+// =============================================================================
+// Sessions and opening-drive calculation
+// =============================================================================
+
+string openingSession = "0930-1000:" + tradingDaysInput
+string decisionBarSession = "0945-1000:" + tradingDaysInput
+string timeExitBarSession = "1545-1600:" + tradingDaysInput
+
+f_driveState(string openingWindow, string decisionWindow, string sessionTimezone, int atrLength) =>
+    float localAtr = ta.atr(atrLength)
+    bool localInOpening = not na(time("", openingWindow, sessionTimezone))
+    bool localOpeningStart = localInOpening and not localInOpening[1]
+    bool localDecisionBar = not na(time("", decisionWindow, sessionTimezone))
+    var float localOpeningPrice = na
+    if localOpeningStart
+        localOpeningPrice := open
+    float localScore = localDecisionBar and not na(localOpeningPrice) and localAtr > 0.0 ? math.abs(close - localOpeningPrice) / (localAtr * math.sqrt(2.0)) : na
+    int localDirection = localDecisionBar and not na(localOpeningPrice) ? close > localOpeningPrice ? 1 : close < localOpeningPrice ? -1 : 0 : 0
+    [localScore, localDirection]
+
+[driveScore, driveDirection] = f_driveState(openingSession, decisionBarSession, timezoneInput, atrLengthInput)
+[comparisonScore, _] = request.security(
+     comparisonSymbolInput,
+     timeframe.period,
+     f_driveState(openingSession, decisionBarSession, timezoneInput, atrLengthInput),
+     gaps = barmerge.gaps_off,
+     lookahead = barmerge.lookahead_off
+ )
+
+float atr = ta.atr(atrLengthInput)
+bool inOpeningWindow = not na(time("", openingSession, timezoneInput))
+bool openingWindowStart = inOpeningWindow and not inOpeningWindow[1]
+bool isDecisionBar = not na(time("", decisionBarSession, timezoneInput))
+bool isTimeExitBar = not na(time("", timeExitBarSession, timezoneInput))
+bool inDateRange = time >= startDateInput and time <= endDateInput
+bool comparisonPassed = not useComparisonInput or na(comparisonScore) or driveScore > comparisonScore
+
+// The tested rule permits no second attempt after a setup occurs.
+var bool tradedThisSession = false
+if openingWindowStart
+    tradedThisSession := false
+
+bool scorePassed = isDecisionBar and not na(driveScore) and driveScore >= minimumScoreInput
+bool flatAndAvailable = strategy.position_size == 0 and not tradedThisSession
+bool longSignal = inDateRange and scorePassed and comparisonPassed and flatAndAvailable and driveDirection == 1 and allowLongInput
+bool shortSignal = inDateRange and scorePassed and comparisonPassed and flatAndAvailable and driveDirection == -1 and allowShortInput
+
+// =============================================================================
+// Fixed-risk quantity and bracket orders
+// =============================================================================
+
+float stopDistance = atr * stopAtrInput
+float pointValue = math.max(syminfo.pointvalue, 0.00000001)
+float quantityStep = na(syminfo.mincontract) or syminfo.mincontract <= 0.0 ? 0.001 : syminfo.mincontract
+float equityToRisk = math.max(strategy.equity, 0.0) * riskPercentInput / 100.0
+float riskPerUnit = stopDistance * pointValue
+float rawRiskQuantity = riskPerUnit > 0.0 ? equityToRisk / riskPerUnit : 0.0
+float notionalPerUnit = close * pointValue
+float maximumQuantity = notionalPerUnit > 0.0 ? strategy.equity * maxNotionalInput / notionalPerUnit : 0.0
+float unroundedQuantity = math.min(rawRiskQuantity, maximumQuantity)
+float orderQuantity = math.floor(unroundedQuantity / quantityStep) * quantityStep
+bool validQuantity = orderQuantity >= quantityStep and stopDistance > 0.0
+
+int stopTicks = math.max(1, int(math.round(stopDistance / syminfo.mintick)))
+int targetTicks = math.max(1, int(math.round(stopDistance * rewardRiskInput / syminfo.mintick)))
+
+var float pendingStopDistance = na
+var int pendingDirection = 0
+var float activeStop = na
+var float activeTarget = na
+var float lastDriveScore = na
+var string lastDecision = "Waiting"
+
+if isDecisionBar and not na(driveScore)
+    lastDriveScore := driveScore
+    lastDecision := scorePassed ? comparisonPassed ? "Eligible" : "Other asset stronger" : "Score below threshold"
+
+if longSignal and validQuantity
+    pendingStopDistance := stopDistance
+    pendingDirection := 1
+    tradedThisSession := true
+    strategy.entry(
+         "Long",
+         strategy.long,
+         qty = orderQuantity,
+         alert_message = "TradeYatra NY Drive LONG | {{ticker}} | fill {{strategy.order.price}}"
+     )
+    strategy.exit(
+         "Long bracket",
+         from_entry = "Long",
+         loss = stopTicks,
+         profit = targetTicks,
+         alert_message = "TradeYatra NY Drive LONG exit | {{ticker}} | fill {{strategy.order.price}}"
+     )
+    alert("NY Opening Drive LONG | " + syminfo.tickerid + " | score " + str.tostring(driveScore, "#.##"), alert.freq_once_per_bar_close)
+
+if shortSignal and validQuantity
+    pendingStopDistance := stopDistance
+    pendingDirection := -1
+    tradedThisSession := true
+    strategy.entry(
+         "Short",
+         strategy.short,
+         qty = orderQuantity,
+         alert_message = "TradeYatra NY Drive SHORT | {{ticker}} | fill {{strategy.order.price}}"
+     )
+    strategy.exit(
+         "Short bracket",
+         from_entry = "Short",
+         loss = stopTicks,
+         profit = targetTicks,
+         alert_message = "TradeYatra NY Drive SHORT exit | {{ticker}} | fill {{strategy.order.price}}"
+     )
+    alert("NY Opening Drive SHORT | " + syminfo.tickerid + " | score " + str.tostring(driveScore, "#.##"), alert.freq_once_per_bar_close)
+
+if (longSignal or shortSignal) and not validQuantity
+    tradedThisSession := true
+    lastDecision := "Skipped: quantity below minimum"
+
+bool positionOpened = strategy.position_size != 0 and strategy.position_size[1] == 0
+bool positionClosed = strategy.position_size == 0 and strategy.position_size[1] != 0
+
+if positionOpened and not na(pendingStopDistance)
+    activeStop := strategy.position_avg_price - pendingDirection * pendingStopDistance
+    activeTarget := strategy.position_avg_price + pendingDirection * pendingStopDistance * rewardRiskInput
+
+if isTimeExitBar and strategy.position_size > 0
+    strategy.close("Long", immediately = true, comment = "16:00 NY exit", alert_message = "TradeYatra NY Drive time exit | {{ticker}}")
+
+if isTimeExitBar and strategy.position_size < 0
+    strategy.close("Short", immediately = true, comment = "16:00 NY exit", alert_message = "TradeYatra NY Drive time exit | {{ticker}}")
+
+if positionClosed
+    pendingStopDistance := na
+    pendingDirection := 0
+    activeStop := na
+    activeTarget := na
+
+// =============================================================================
+// Validation, visuals, and alerts
+// =============================================================================
+
+bool correctTimeframe = timeframe.isminutes and timeframe.multiplier == 15
+if barstate.isfirst and not correctTimeframe
+    runtime.error("Use this strategy on a standard 15-minute candlestick chart.")
+
+bgcolor(showOpeningWindowInput and inOpeningWindow ? color.new(color.blue, 88) : na, title = "Opening-drive window")
+plot(showLevelsInput and strategy.position_size != 0 ? activeStop : na, "Active stop", color = color.red, linewidth = 2, style = plot.style_linebr)
+plot(showLevelsInput and strategy.position_size != 0 ? activeTarget : na, "Active target", color = color.lime, linewidth = 2, style = plot.style_linebr)
+plot(driveScore, "Opening-drive score", color = color.new(color.blue, 100), display = display.data_window)
+plot(comparisonScore, "Comparison score", color = color.new(color.orange, 100), display = display.data_window)
+plot(orderQuantity, "Calculated order quantity", color = color.new(color.gray, 100), display = display.data_window)
+
+plotshape(showSignalsInput and longSignal and validQuantity, title = "Long setup", style = shape.triangleup, location = location.belowbar, color = color.lime, size = size.small, text = "LONG")
+plotshape(showSignalsInput and shortSignal and validQuantity, title = "Short setup", style = shape.triangledown, location = location.abovebar, color = color.red, size = size.small, text = "SHORT")
+
+alertcondition(longSignal and validQuantity, "NY Drive long setup", "BTC/ETH New York opening-drive long setup")
+alertcondition(shortSignal and validQuantity, "NY Drive short setup", "BTC/ETH New York opening-drive short setup")
+
+var table statusTable = table.new(position.top_right, 2, 6, border_width = 1)
+if barstate.islast and showStatusInput
+    table.cell(statusTable, 0, 0, "NY Drive", bgcolor = color.rgb(28, 37, 54), text_color = color.white)
+    table.cell(statusTable, 1, 0, syminfo.ticker, bgcolor = color.rgb(28, 37, 54), text_color = color.white)
+    table.cell(statusTable, 0, 1, "Timeframe")
+    table.cell(statusTable, 1, 1, timeframe.period, text_color = correctTimeframe ? color.lime : color.red)
+    table.cell(statusTable, 0, 2, "Last score")
+    table.cell(statusTable, 1, 2, na(lastDriveScore) ? "n/a" : str.tostring(lastDriveScore, "#.##"))
+    table.cell(statusTable, 0, 3, "Decision")
+    table.cell(statusTable, 1, 3, lastDecision)
+    table.cell(statusTable, 0, 4, "Comparison")
+    table.cell(statusTable, 1, 4, useComparisonInput ? comparisonSymbolInput : "Off")
+    table.cell(statusTable, 0, 5, "Commission")
+    table.cell(statusTable, 1, 5, "0.059% / fill")

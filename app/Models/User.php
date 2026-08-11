@@ -7,6 +7,7 @@ use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -84,5 +85,20 @@ class User extends Authenticatable
     public function supportTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);
+    }
+
+    public function activitySessions(): HasMany
+    {
+        return $this->hasMany(UserActivitySession::class);
+    }
+
+    public function pageSessions(): HasMany
+    {
+        return $this->hasMany(UserPageSession::class);
+    }
+
+    public function latestActivitySession(): HasOne
+    {
+        return $this->hasOne(UserActivitySession::class)->latestOfMany('last_seen_at');
     }
 }

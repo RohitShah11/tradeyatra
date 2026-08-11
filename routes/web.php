@@ -25,6 +25,7 @@ use App\Http\Controllers\SharkExchangeController;
 use App\Http\Controllers\SupportContributionController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TradeController;
+use App\Http\Controllers\UserActivityController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -102,6 +103,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/analytics', AdminAnalyticsController::class)->name('analytics');
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
+        Route::get('/users/{user}/chat', [AdminSupportController::class, 'start'])->name('users.chat');
+        Route::post('/users/{user}/chat', [AdminSupportController::class, 'store'])->middleware('throttle:10,1')->name('users.chat.store');
         Route::get('/contacts', [AdminContactController::class, 'index'])->name('contacts.index');
         Route::get('/contacts/{contactMessage}', [AdminContactController::class, 'show'])->name('contacts.show');
         Route::patch('/contacts/{contactMessage}', [AdminContactController::class, 'update'])->name('contacts.update');
@@ -148,6 +151,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'analytics.visit'])->group(function () {
+    Route::post('/activity/heartbeat', [UserActivityController::class, 'heartbeat'])->middleware('throttle:120,1')->name('activity.heartbeat');
     Route::get('/ai-chat', [AiChatController::class, 'index'])->name('ai-chat.index');
     Route::post('/ai-chat/conversations', [AiChatController::class, 'createConversation'])->name('ai-chat.conversations.create');
     Route::post('/ai-chat/messages', [AiChatController::class, 'message'])->middleware('throttle:20,1')->name('ai-chat.messages.store');
@@ -185,4 +189,7 @@ Route::middleware(['auth', 'analytics.visit'])->group(function () {
     Route::get('/support/{supportTicket}', [SupportTicketController::class, 'show'])->name('support.show');
     Route::post('/support/{supportTicket}/reply', [SupportTicketController::class, 'reply'])->middleware('throttle:30,1')->name('support.reply');
     Route::patch('/support/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->name('support.status');
+    Route::get('/messages', [SupportTicketController::class, 'chat'])->name('messages.show');
+    Route::get('/messages/unread-count', [SupportTicketController::class, 'unreadChatCount'])->middleware('throttle:120,1')->name('messages.unread-count');
+    Route::post('/messages', [SupportTicketController::class, 'startChat'])->middleware('throttle:30,1')->name('messages.store');
 });

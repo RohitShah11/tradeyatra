@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserPageSession;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,6 +14,7 @@ class AdminUserController extends Controller
     {
         $search = trim((string) $request->query('search'));
         $users = User::query()
+            ->with('latestActivitySession')
             ->withCount(['trades', 'sharkAccounts'])
             ->when($search, fn ($query) => $query->where(fn ($inner) => $inner
                 ->where('name', 'like', "%{$search}%")
@@ -27,7 +29,15 @@ class AdminUserController extends Controller
     public function show(User $user): View
     {
         $user->loadCount(['trades', 'sharkAccounts', 'syncLogs', 'aiConversations']);
+        $user->load('latestActivitySession');
+        $recentActivitySessions = $user->activitySessions()->latest('last_seen_at')->limit(10)->get();
+        $pageUsage = UserPageSession::query()->where('user_id', $user->id)
+            ->where('started_at', '>=', now()->subDays(30))
+            ->selectRaw('path, SUM(active_seconds) as active_seconds, COUNT(*) as visits')
+            ->groupBy('path')->orderByDesc('active_seconds')->limit(10)->get();
+        $activeToday = (int) $user->pageSessions()->where('started_at', '>=', today())->sum('active_seconds');
+        $activeSevenDays = (int) $user->pageSessions()->where('started_at', '>=', now()->subDays(7))->sum('active_seconds');
 
-        return view('admin.users.show', compact('user'));
+        return view('admin.users.show', compact('user', 'recentActivitySessions', 'pageUsage', 'activeToday', 'activeSevenDays'));
     }
 }

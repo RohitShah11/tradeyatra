@@ -1,0 +1,161 @@
+//@version=6
+strategy("BTC Trendline Breakout + EMA 9/15 Pullback", overlay=true, initial_capital=100000, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=10, commission_type=strategy.commission.percent, commission_value=0.059, slippage=0, margin_long=100, process_orders_on_close=false)
+
+// BTC-only, long-only research strategy for standard 1-hour or 4-hour candles.
+// Sequence: bullish trend -> descending trendline breakout -> EMA 9/15 pullback
+// -> bullish confirmation -> entry. Signals use confirmed bar closes.
+
+pivotStrength = input.int(3, "Pivot strength", minval=2, maxval=10, tooltip="Bars required on both sides of a confirmed pivot high.")
+fastTrendLength = input.int(50, "Fast trend EMA", minval=20)
+slowTrendLength = input.int(200, "Slow trend EMA", minval=50)
+pullbackTolerance = input.float(0.25, "EMA-zone tolerance (%)", minval=0.0, maxval=2.0, step=0.05) / 100
+maximumWaitHours = input.int(48, "Maximum hours to wait for pullback", minval=4, maxval=240)
+minimumStopAtr = input.float(1.25, "Minimum stop distance (ATR)", minval=0.5, step=0.25)
+stopBufferAtr = input.float(0.10, "Stop buffer below pullback (ATR)", minval=0.0, step=0.05)
+rewardRisk = input.float(2.0, "Profit target (R)", minval=1.0, maxval=5.0, step=0.25)
+closeOnEmaFailure = input.bool(true, "Exit when EMA 9 crosses below EMA 15")
+
+ema9 = ta.ema(close, 9)
+ema15 = ta.ema(close, 15)
+ema50 = ta.ema(close, fastTrendLength)
+ema200 = ta.ema(close, slowTrendLength)
+atr = ta.atr(14)
+
+// Bullish regime: price and EMA 50 are above EMA 200, with both trend averages rising.
+bullishTrend = close > ema200 and ema50 > ema200 and ema50 > ema50[1] and ema200 >= ema200[1]
+
+// Store the two latest confirmed pivot highs. Their actual pivot bars occurred
+// pivotStrength bars before the values become available.
+confirmedPivotHigh = ta.pivothigh(high, pivotStrength, pivotStrength)
+newPivotHigh = not na(confirmedPivotHigh)
+var float olderPivotPrice = na
+var float newerPivotPrice = na
+var int olderPivotBar = na
+var int newerPivotBar = na
+
+if newPivotHigh
+    olderPivotPrice := newerPivotPrice
+    olderPivotBar := newerPivotBar
+    newerPivotPrice := confirmedPivotHigh
+    newerPivotBar := bar_index - pivotStrength
+
+descendingResistance = not na(olderPivotPrice) and not na(newerPivotPrice) and newerPivotBar > olderPivotBar and newerPivotPrice < olderPivotPrice
+trendlineSlope = descendingResistance ? (newerPivotPrice - olderPivotPrice) / (newerPivotBar - olderPivotBar) : na
+resistanceLine = descendingResistance ? newerPivotPrice + trendlineSlope * (bar_index - newerPivotBar) : na
+lineIsCurrent = descendingResistance and bar_index - newerPivotBar <= 100 and resistanceLine > 0
+crossedResistance = ta.crossover(close, resistanceLine)
+breakoutSignal = barstate.isconfirmed and strategy.position_size == 0 and bullishTrend and lineIsCurrent and crossedResistance and close > ema9 and not newPivotHigh
+
+// State machine: 0 waits for breakout, 1 waits for EMA-zone pullback,
+// 2 waits for bullish confirmation after the pullback.
+var int setupState = 0
+var int breakoutBar = na
+var int pullbackBar = na
+var float pullbackLow = na
+var float plannedRiskDistance = na
+var float activeStop = na
+var float activeTarget = na
+
+timeframeHours = timeframe.in_seconds(timeframe.period) / 3600.0
+maximumWaitBars = math.max(2, int(math.round(maximumWaitHours / timeframeHours)))
+
+if breakoutSignal
+    setupState := 1
+    breakoutBar := bar_index
+    pullbackBar := na
+    pullbackLow := na
+
+emaZoneTop = math.max(ema9, ema15) * (1 + pullbackTolerance)
+emaZoneBottom = math.min(ema9, ema15) * (1 - pullbackTolerance)
+touchesEmaZone = low <= emaZoneTop and high >= emaZoneBottom and close >= ema15
+
+bool pullbackSignal = false
+bool buySignal = false
+
+if setupState > 0 and (not bullishTrend or bar_index - breakoutBar > maximumWaitBars)
+    setupState := 0
+    breakoutBar := na
+    pullbackBar := na
+    pullbackLow := na
+
+if setupState == 1 and bar_index > breakoutBar and touchesEmaZone
+    setupState := 2
+    pullbackBar := bar_index
+    pullbackLow := low
+    pullbackSignal := true
+
+if setupState == 2
+    pullbackLow := math.min(pullbackLow, low)
+    bullishConfirmation = barstate.isconfirmed and bar_index > pullbackBar and close > open and close > ema9 and ema9 > ema15 and close > high[1]
+    if bullishConfirmation and bullishTrend and strategy.position_size == 0
+        buySignal := true
+        priceRiskToPullback = close - (pullbackLow - atr * stopBufferAtr)
+        plannedRiskDistance := math.max(priceRiskToPullback, atr * minimumStopAtr)
+        stopTicks = math.max(1, int(math.round(plannedRiskDistance / syminfo.mintick)))
+        targetTicks = math.max(1, int(math.round(plannedRiskDistance * rewardRisk / syminfo.mintick)))
+        strategy.entry("Long", strategy.long)
+        strategy.exit("Stop / target", from_entry="Long", loss=stopTicks, profit=targetTicks)
+        setupState := 0
+        breakoutBar := na
+        pullbackBar := na
+        pullbackLow := na
+
+positionOpened = strategy.position_size > 0 and strategy.position_size[1] == 0
+positionClosed = strategy.position_size == 0 and strategy.position_size[1] > 0
+
+if positionOpened and not na(plannedRiskDistance)
+    activeStop := strategy.position_avg_price - plannedRiskDistance
+    activeTarget := strategy.position_avg_price + plannedRiskDistance * rewardRisk
+
+emaFailure = barstate.isconfirmed and strategy.position_size > 0 and ta.crossunder(ema9, ema15) and close < ema15
+if closeOnEmaFailure and emaFailure
+    strategy.close("Long", comment="EMA trend failure")
+
+if positionClosed
+    plannedRiskDistance := na
+    activeStop := na
+    activeTarget := na
+
+// Visuals
+ema9Plot = plot(ema9, "EMA 9", color=color.lime, linewidth=2)
+ema15Plot = plot(ema15, "EMA 15", color=color.orange, linewidth=2)
+fill(ema9Plot, ema15Plot, color=ema9 >= ema15 ? color.new(color.green, 88) : color.new(color.red, 90), title="EMA 9/15 support zone")
+plot(ema50, "EMA 50", color=color.blue)
+plot(ema200, "EMA 200", color=color.purple, linewidth=2)
+plot(lineIsCurrent ? resistanceLine : na, "Descending resistance", color=color.red, linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size > 0 ? activeStop : na, "Active stop", color=color.red, linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size > 0 ? activeTarget : na, "Active target", color=color.green, linewidth=2, style=plot.style_linebr)
+
+bgcolor(bullishTrend ? color.new(color.green, 94) : color.new(color.red, 96), title="Trend regime")
+plotshape(breakoutSignal, title="Trendline breakout", style=shape.labelup, location=location.belowbar, color=color.blue, text="BREAK", textcolor=color.white, size=size.tiny)
+plotshape(pullbackSignal, title="EMA pullback", style=shape.circle, location=location.belowbar, color=color.orange, text="PB", textcolor=color.black, size=size.tiny)
+plotshape(buySignal, title="Buy confirmation", style=shape.labelup, location=location.belowbar, color=color.lime, text="BUY", textcolor=color.black, size=size.small)
+
+// Diagnostics
+isBtcChart = str.contains(str.upper(syminfo.ticker), "BTC")
+isSupportedTimeframe = timeframe.isminutes and (timeframe.multiplier == 60 or timeframe.multiplier == 240)
+stateText = setupState == 0 ? "Waiting for breakout" : setupState == 1 ? "Waiting for EMA pullback" : "Waiting for buy confirmation"
+trendText = bullishTrend ? "Bullish" : "Not bullish"
+
+var table status = table.new(position.top_right, 2, 6, border_width=1)
+if barstate.islast
+    table.cell(status, 0, 0, "BTC setup", bgcolor=color.navy, text_color=color.white)
+    table.cell(status, 1, 0, "Loaded", bgcolor=color.navy, text_color=color.white)
+    table.cell(status, 0, 1, "Chart")
+    table.cell(status, 1, 1, syminfo.ticker, text_color=isBtcChart ? color.lime : color.red)
+    table.cell(status, 0, 2, "Timeframe")
+    table.cell(status, 1, 2, timeframe.period, text_color=isSupportedTimeframe ? color.lime : color.red)
+    table.cell(status, 0, 3, "Trend")
+    table.cell(status, 1, 3, trendText, text_color=bullishTrend ? color.lime : color.orange)
+    table.cell(status, 0, 4, "Setup state")
+    table.cell(status, 1, 4, stateText)
+    table.cell(status, 0, 5, "Trendline")
+    table.cell(status, 1, 5, lineIsCurrent ? "Active" : "Waiting for lower highs")
+
+if barstate.islast and (not isBtcChart or not isSupportedTimeframe)
+    warningText = not isBtcChart ? "Use a BTC chart" : "Use 1-hour or 4-hour timeframe"
+    label.new(bar_index, high, warningText, style=label.style_label_down, color=color.red, textcolor=color.white)
+
+alertcondition(breakoutSignal, "BTC trendline breakout", "BTC confirmed above descending trendline")
+alertcondition(pullbackSignal, "BTC EMA pullback", "BTC pulled back into EMA 9/15 support")
+alertcondition(buySignal, "BTC buy confirmation", "BTC EMA pullback buy confirmation")

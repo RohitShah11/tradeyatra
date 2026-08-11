@@ -18,9 +18,11 @@
         <nav class="nav" aria-label="Admin navigation">
             <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Overview</a>
             <a class="{{ request()->routeIs('admin.analytics') ? 'active' : '' }}" href="{{ route('admin.analytics') }}">Analytics</a>
-            <a class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Users</a>
+            <a class="{{ request()->routeIs('admin.users.index','admin.users.show') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Users</a>
+            @php($chatUnread = \App\Models\SupportTicket::query()->where('category','chat')->sum('admin_unread_count'))
+            <a class="{{ request()->routeIs('admin.users.chat*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Messages @if($chatUnread)<span class="badge new">{{ min($chatUnread,99) }}</span>@endif</a>
             <a class="{{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}" href="{{ route('admin.contacts.index') }}">Contact inbox</a>
-            @php($supportUnread = \App\Models\SupportTicket::query()->sum('admin_unread_count'))
+            @php($supportUnread = \App\Models\SupportTicket::query()->where('category','!=','chat')->sum('admin_unread_count'))
             <a class="{{ request()->routeIs('admin.support.*') ? 'active' : '' }}" href="{{ route('admin.support.index') }}">Support inbox @if($supportUnread)<span class="badge new">{{ min($supportUnread,99) }}</span>@endif</a>
             @php($pendingContributions = \App\Models\SupportContribution::query()->where('status', 'pending')->count())
             <a class="{{ request()->routeIs('admin.contributions.*') ? 'active' : '' }}" href="{{ route('admin.contributions.index') }}">Contributions @if($pendingContributions)<span class="badge new">{{ min($pendingContributions,99) }}</span>@endif</a>
