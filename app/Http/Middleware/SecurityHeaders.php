@@ -31,6 +31,7 @@ class SecurityHeaders
             "font-src 'self' https://fonts.bunny.net",
             "img-src 'self' data: https:",
             "connect-src 'self'",
+            "frame-src 'self' https://www.youtube-nocookie.com",
         ]));
 
         if ($request->isSecure() && app()->isProduction()) {

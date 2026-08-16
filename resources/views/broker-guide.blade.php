@@ -56,6 +56,13 @@
         .shark { --exchange:var(--cyan); }
         .delta { --exchange:var(--orange); }
         .exchange-body { padding:22px; }
+        .video-guide { margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+        .video-guide h3 { font-size:21px; }
+        .video-guide > p { margin-bottom:13px; color:var(--muted); font-size:14px; }
+        .video-frame { position:relative; overflow:hidden; aspect-ratio:16/9; border:1px solid var(--line); border-radius:12px; background:#020608; box-shadow:0 18px 44px rgba(0,0,0,.28); }
+        .video-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+        .video-link { display:inline-flex; margin-top:10px; color:var(--exchange); font-size:13px; font-weight:800; }
+        .video-link:hover { text-decoration:underline; }
         .steps { display:grid; gap:12px; }
         .step { display:grid; grid-template-columns:34px 1fr; gap:12px; align-items:start; }
         .step-num { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; color:var(--exchange); background:color-mix(in srgb,var(--exchange) 12%,transparent); font-size:12px; font-weight:900; }
@@ -101,7 +108,16 @@
             <div class="wrap exchange-grid">
                 <article class="card exchange-card shark" id="shark-guide">
                     <div class="exchange-head"><div class="exchange-brand"><span class="exchange-mark">S</span><div><h2>Shark Exchange</h2><p class="muted">Trade history, orders, positions, and INR wallet data</p></div></div><a class="btn" href="{{ route('shark.settings') }}">Open Shark settings</a></div>
-                    <div class="exchange-body"><div class="steps">
+                    <div class="exchange-body">
+                        <div class="video-guide">
+                            <h3>Watch the Shark connection walkthrough</h3>
+                            <p>Follow this video to create the Shark API credentials and connect your account to TradeYatra, then use the written checklist below to verify every setting.</p>
+                            <div class="video-frame">
+                                <iframe src="https://www.youtube-nocookie.com/embed/8z0kvif4Hlc" title="How to connect Shark Exchange to TradeYatra" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            </div>
+                            <a class="video-link" href="https://www.youtube.com/watch?v=8z0kvif4Hlc" target="_blank" rel="noopener noreferrer">Watch directly on YouTube →</a>
+                        </div>
+                        <div class="steps">
                         <div class="step"><span class="step-num">01</span><div><h3>Open the correct Shark account</h3><p>Sign in to the Shark Exchange account whose futures trades you want to import. Complete any security verification requested by Shark.</p></div></div>
                         <div class="step"><span class="step-num">02</span><div><h3>Open API Management</h3><p>From your profile or account settings, open the API-key management screen and choose the option to create a new API key.</p></div></div>
                         <div class="step"><span class="step-num">03</span><div><h3>Create a dedicated key</h3><p>Name the key <strong>TradeYatra</strong>. Copy the API key and secret immediately and keep the creation screen open until setup is complete; Shark documents that the secret is shown only once.</p></div></div>
@@ -110,7 +126,9 @@
                         <div class="step"><span class="step-num">06</span><div><h3>Enter credentials in TradeYatra</h3><p>Open Shark Settings, paste the key and secret without leading or trailing spaces, and leave both API endpoints on Shark's documented production host.</p><code class="endpoint">https://api.sharkexchange.in</code></div></div>
                         <div class="step"><span class="step-num">07</span><div><h3>Save the connection</h3><p>Confirm the default symbol and margin asset match your Shark account, enable automatic sync only if desired, and select <strong>Save connection</strong>.</p></div></div>
                         <div class="step"><span class="step-num">08</span><div><h3>Run and verify the first sync</h3><p>Open the Shark Sync Center, run a manual sync, and check the activity log. Confirm that realized trades and account information appear before relying on automatic updates.</p></div></div>
-                    </div><div class="warning"><strong>Shark-specific:</strong> TradeYatra uses authenticated read endpoints documented by Shark. It does not require Shark's trade-permission endpoints.</div></div>
+                        </div>
+                        <div class="warning"><strong>Shark-specific:</strong> TradeYatra uses authenticated read endpoints documented by Shark. It does not require Shark's trade-permission endpoints.</div>
+                    </div>
                 </article>
 
                 <article class="card exchange-card delta" id="delta-guide">

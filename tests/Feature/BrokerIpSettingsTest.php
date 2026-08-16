@@ -51,13 +51,20 @@ class BrokerIpSettingsTest extends TestCase
         config()->set('services.broker_sync.ipv4', '203.0.113.10');
         config()->set('services.broker_sync.ipv6', '2001:db8::10');
 
-        $this->get(route('broker.guide'))
+        $response = $this->get(route('broker.guide'))
             ->assertOk()
             ->assertSee('Apply IP restriction when available')
             ->assertSee('Add the TradeYatra server addresses')
             ->assertSee('Run and verify the first sync')
             ->assertSee('Run the first Delta sync')
+            ->assertSee('https://www.youtube-nocookie.com/embed/8z0kvif4Hlc', false)
+            ->assertSee('Watch directly on YouTube')
             ->assertDontSee('203.0.113.10')
             ->assertDontSee('2001:db8::10');
+
+        $this->assertStringContainsString(
+            "frame-src 'self' https://www.youtube-nocookie.com",
+            (string) $response->headers->get('Content-Security-Policy'),
+        );
     }
 }
