@@ -176,7 +176,7 @@ Route::middleware(['auth', 'analytics.visit'])->group(function () {
     Route::get('/shark/settings', [SharkExchangeController::class, 'settings'])->name('shark.settings');
     Route::post('/shark/settings', [SharkExchangeController::class, 'saveSettings'])->name('shark.settings.save');
     Route::get('/shark/sync', [SharkExchangeController::class, 'syncPage'])->name('shark.sync');
-    Route::post('/shark/sync', [SharkExchangeController::class, 'sync'])->middleware('throttle:5,1')->name('shark.sync.run');
+    Route::post('/shark/sync', [SharkExchangeController::class, 'sync'])->name('shark.sync.run');
     Route::get('/shark/market', [SharkExchangeController::class, 'market'])->name('shark.market');
     Route::get('/delta/settings', [DeltaExchangeController::class, 'settings'])->name('delta.settings');
     Route::post('/delta/settings', [DeltaExchangeController::class, 'saveSettings'])->name('delta.settings.save');

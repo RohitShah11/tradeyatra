@@ -29,10 +29,10 @@
         </div>
     </section>
 
-    <form class="panel toolbar" method="POST" action="{{ route('shark.sync.run') }}">@csrf
+    <form id="sharkSyncForm" class="panel toolbar" method="POST" action="{{ route('shark.sync.run') }}">@csrf
         <div><label>Symbol filter</label><input name="symbol" value="{{ old('symbol') }}" placeholder="Leave blank for all pairs"></div>
         <div><label>Page size</label><input type="number" name="pageSize" value="100" min="1" max="500"></div>
-        <button class="btn">Sync Now</button><a class="btn secondary" href="{{ route('shark.settings') }}">Settings</a>
+        <button id="sharkSyncButton" class="btn">Sync Now</button><a class="btn secondary" href="{{ route('shark.settings') }}">Settings</a>
     </form>
 
     <div class="sync-note"><strong>What Shark Sync imports</strong><p>TradeYatra reads trade history, order history, open orders, open positions, and a futures-wallet snapshot. Only new realized trade records are added to your journal; existing records are not duplicated.</p></div>
@@ -45,4 +45,11 @@
         </tbody></table>
     </section>
 </div>
+<script>
+document.getElementById('sharkSyncForm')?.addEventListener('submit', () => {
+    const button = document.getElementById('sharkSyncButton');
+    button.disabled = true;
+    button.textContent = 'Syncing…';
+});
+</script>
 @endsection

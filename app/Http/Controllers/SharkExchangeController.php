@@ -75,30 +75,40 @@ class SharkExchangeController extends Controller
             return redirect()->route('shark.settings')->with('error', 'Add your SharkExchange API key and secret before syncing.');
         }
 
-        $params = [
-            'sortOrder' => 'desc',
-            'pageSize' => (int) $request->input('pageSize', 100),
-        ];
+        $lock = Cache::lock('shark-manual-sync:'.auth()->id(), 120);
 
-        if ($request->filled('symbol')) {
-            $params['symbol'] = strtoupper($request->symbol);
+        if (! $lock->get()) {
+            return redirect()->route('shark.sync')->with('error', 'A SharkExchange sync is already running. Please wait for it to finish.');
         }
 
-        $log = $syncService->sync($account, $params);
+        try {
+            $params = [
+                'sortOrder' => 'desc',
+                'pageSize' => (int) $request->input('pageSize', 100),
+            ];
 
-        foreach (['all', 'SharkExchange'] as $scope) {
-            Cache::forget('trade-filter-options:'.auth()->id().':'.$scope);
+            if ($request->filled('symbol')) {
+                $params['symbol'] = strtoupper($request->symbol);
+            }
+
+            $log = $syncService->sync($account, $params);
+
+            foreach (['all', 'SharkExchange'] as $scope) {
+                Cache::forget('trade-filter-options:'.auth()->id().':'.$scope);
+            }
+
+            if ($log->status === 'failed') {
+                $analytics->track($request, 'broker_connection_failed', ['broker' => 'shark']);
+
+                return redirect()->route('shark.sync')->with('error', 'SharkExchange sync failed: '.$log->message);
+            }
+
+            $analytics->track($request, 'broker_connection_success', ['broker' => 'shark']);
+
+            return redirect()->route('shark.sync')->with('success', "Sync complete. Imported {$log->imported_count} new trades.");
+        } finally {
+            $lock->release();
         }
-
-        if ($log->status === 'failed') {
-            $analytics->track($request, 'broker_connection_failed', ['broker' => 'shark']);
-
-            return redirect()->route('shark.sync')->with('error', 'SharkExchange sync failed: '.$log->message);
-        }
-
-        $analytics->track($request, 'broker_connection_success', ['broker' => 'shark']);
-
-        return redirect()->route('shark.sync')->with('success', "Sync complete. Imported {$log->imported_count} new trades.");
     }
 
     public function syncPage(Request $request)
