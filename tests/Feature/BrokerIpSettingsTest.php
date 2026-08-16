@@ -27,7 +27,8 @@ class BrokerIpSettingsTest extends TestCase
                 ->assertSee('Copy IPv4')
                 ->assertSee('Copy IPv6')
                 ->assertSee(route('broker.guide'), false)
-                ->assertDontSee('Need help connecting');
+                ->assertSee('Need help connecting')
+                ->assertSee('https://www.youtube-nocookie.com/embed/8z0kvif4Hlc', false);
         }
     }
 

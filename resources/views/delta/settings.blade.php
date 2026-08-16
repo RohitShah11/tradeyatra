@@ -35,7 +35,7 @@
 <div class="delta-settings">
     <section class="delta-hero"><div class="delta-brand"><span class="delta-mark">D</span><div><h2>Delta Exchange India connection</h2><p>Import fills, realized P&amp;L, positions, and USD wallet information.</p></div></div><div class="connection-state"><span class="state-badge {{ $isConnected ? '' : 'offline' }}">{{ $isConnected ? 'Connected' : 'Setup required' }}</span><small>{{ $account->last_synced_at ? 'Last synced '.$account->last_synced_at->diffForHumans() : 'No successful sync recorded' }}</small></div></section>
 
-    <a class="table-link" href="{{ route('broker.guide') }}#delta-guide" target="_blank" rel="noopener">View the complete Delta connection guide →</a>
+    @include('partials.broker-connection-video', ['broker' => 'delta'])
 
     <section class="ip-whitelist-panel">
         <div class="ip-whitelist-head"><h2>Server IP whitelist</h2><p>Before connecting, copy these TradeYatra server addresses into your broker API key's IP whitelist. Do not use your home or phone IP.</p></div>

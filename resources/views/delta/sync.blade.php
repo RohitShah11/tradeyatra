@@ -15,6 +15,8 @@
         <div class="panel sync-card"><h2>Connection status</h2><p>{{ $credentialsReady ? 'API key and secret are saved.' : 'Save your Delta API key and secret before syncing.' }}</p><div class="actions" style="margin-top:14px"><a class="btn secondary" href="{{ route('delta.settings') }}">Open Delta settings</a><a class="btn secondary" href="{{ route('broker.guide') }}#delta-guide" target="_blank" rel="noopener">Connection guide</a></div></div>
     </section>
 
+    @include('partials.broker-connection-video', ['broker' => 'delta'])
+
     <form class="panel toolbar" method="POST" action="{{ route('delta.sync.run') }}">@csrf
         <div><label>Product IDs</label><input name="product_ids" placeholder="Optional, e.g. 27,139"></div>
         <div><label>Page size</label><input type="number" name="page_size" value="50" min="1" max="50"></div>

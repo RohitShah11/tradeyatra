@@ -21,6 +21,8 @@ class BrokerSyncCenterContentTest extends TestCase
                 ->assertSee('Automatic sync every 5 minutes')
                 ->assertSee('Setup incomplete')
                 ->assertSee('Connection guide')
+                ->assertSee('https://www.youtube-nocookie.com/embed/8z0kvif4Hlc', false)
+                ->assertSee('Watch on YouTube')
                 ->assertDontSee('Before the first sync')
                 ->assertDontSee('Run Sync Now once')
                 ->assertDontSee('Server IP whitelist');

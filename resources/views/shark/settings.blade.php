@@ -115,7 +115,7 @@
         </div>
     </section>
 
-    <a class="table-link" href="{{ route('broker.guide') }}#shark-guide" target="_blank" rel="noopener">View the complete Shark connection guide →</a>
+    @include('partials.broker-connection-video', ['broker' => 'shark'])
 
     <section class="ip-whitelist-panel">
         <div class="ip-whitelist-head"><h2>Server IP whitelist</h2><p>Before connecting, copy these TradeYatra server addresses into your broker API key's IP whitelist. Do not use your home or phone IP.</p></div>

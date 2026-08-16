@@ -29,6 +29,8 @@
         </div>
     </section>
 
+    @include('partials.broker-connection-video', ['broker' => 'shark'])
+
     <form id="sharkSyncForm" class="panel toolbar" method="POST" action="{{ route('shark.sync.run') }}">@csrf
         <div><label>Symbol filter</label><input name="symbol" value="{{ old('symbol') }}" placeholder="Leave blank for all pairs"></div>
         <div><label>Page size</label><input type="number" name="pageSize" value="100" min="1" max="500"></div>
