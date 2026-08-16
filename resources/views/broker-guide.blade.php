@@ -56,12 +56,13 @@
         .shark { --exchange:var(--cyan); }
         .delta { --exchange:var(--orange); }
         .exchange-body { padding:22px; }
-        .video-guide { margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line); }
-        .video-guide h3 { font-size:21px; }
+        .video-section { padding-bottom:0; }
+        .video-guide { padding:24px; border-color:rgba(24,199,255,.24); background:linear-gradient(135deg,rgba(255,122,26,.1),rgba(24,199,255,.07)); }
+        .video-guide h3 { font-size:clamp(23px,3vw,32px); }
         .video-guide > p { margin-bottom:13px; color:var(--muted); font-size:14px; }
         .video-frame { position:relative; overflow:hidden; aspect-ratio:16/9; border:1px solid var(--line); border-radius:12px; background:#020608; box-shadow:0 18px 44px rgba(0,0,0,.28); }
         .video-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
-        .video-link { display:inline-flex; margin-top:10px; color:var(--exchange); font-size:13px; font-weight:800; }
+        .video-link { display:inline-flex; margin-top:10px; color:var(--cyan); font-size:13px; font-weight:800; }
         .video-link:hover { text-decoration:underline; }
         .steps { display:grid; gap:12px; }
         .step { display:grid; grid-template-columns:34px 1fr; gap:12px; align-items:start; }
@@ -104,19 +105,24 @@
             </div>
         </section>
 
+        <section class="video-section" aria-labelledby="connection-video-title">
+            <div class="wrap">
+                <article class="card video-guide">
+                    <h3 id="connection-video-title">Watch the broker connection walkthrough</h3>
+                    <p>This video covers the TradeYatra broker connection process. Watch it first, then follow the Shark or Delta checklist below for the settings specific to your exchange.</p>
+                    <div class="video-frame">
+                        <iframe src="https://www.youtube-nocookie.com/embed/8z0kvif4Hlc" title="How to connect a broker account to TradeYatra" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                    <a class="video-link" href="https://www.youtube.com/watch?v=8z0kvif4Hlc" target="_blank" rel="noopener noreferrer">Watch directly on YouTube →</a>
+                </article>
+            </div>
+        </section>
+
         <section>
             <div class="wrap exchange-grid">
                 <article class="card exchange-card shark" id="shark-guide">
                     <div class="exchange-head"><div class="exchange-brand"><span class="exchange-mark">S</span><div><h2>Shark Exchange</h2><p class="muted">Trade history, orders, positions, and INR wallet data</p></div></div><a class="btn" href="{{ route('shark.settings') }}">Open Shark settings</a></div>
                     <div class="exchange-body">
-                        <div class="video-guide">
-                            <h3>Watch the Shark connection walkthrough</h3>
-                            <p>Follow this video to create the Shark API credentials and connect your account to TradeYatra, then use the written checklist below to verify every setting.</p>
-                            <div class="video-frame">
-                                <iframe src="https://www.youtube-nocookie.com/embed/8z0kvif4Hlc" title="How to connect Shark Exchange to TradeYatra" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                            </div>
-                            <a class="video-link" href="https://www.youtube.com/watch?v=8z0kvif4Hlc" target="_blank" rel="noopener noreferrer">Watch directly on YouTube →</a>
-                        </div>
                         <div class="steps">
                         <div class="step"><span class="step-num">01</span><div><h3>Open the correct Shark account</h3><p>Sign in to the Shark Exchange account whose futures trades you want to import. Complete any security verification requested by Shark.</p></div></div>
                         <div class="step"><span class="step-num">02</span><div><h3>Open API Management</h3><p>From your profile or account settings, open the API-key management screen and choose the option to create a new API key.</p></div></div>
@@ -133,7 +139,8 @@
 
                 <article class="card exchange-card delta" id="delta-guide">
                     <div class="exchange-head"><div class="exchange-brand"><span class="exchange-mark">D</span><div><h2>Delta Exchange India</h2><p class="muted">Fills, realized P&amp;L, positions, and USD wallet activity</p></div></div><a class="btn" href="{{ route('delta.settings') }}">Open Delta settings</a></div>
-                    <div class="exchange-body"><div class="steps">
+                    <div class="exchange-body">
+                        <div class="steps">
                         <div class="step"><span class="step-num">01</span><div><h3>Use Delta Exchange India</h3><p>Sign in to the Delta Exchange India production account whose history you want to import. India, Global, and testnet API keys are not interchangeable.</p></div></div>
                         <div class="step"><span class="step-num">02</span><div><h3>Open API Management</h3><p>From the Delta account menu, open API Management and choose to create a new API key. Name the key <strong>TradeYatra</strong>.</p></div></div>
                         <div class="step"><span class="step-num">03</span><div><h3>Select minimum permissions</h3><p>TradeYatra needs authenticated read access for your profile, fills, orders, positions, balances, and wallet transactions. Do not enable Trading permission or withdrawals.</p></div></div>
@@ -142,7 +149,9 @@
                         <div class="step"><span class="step-num">06</span><div><h3>Use the India production endpoint</h3><p>Paste the credentials into Delta Settings and keep the API base URL on Delta's documented India production endpoint.</p><code class="endpoint">https://api.india.delta.exchange</code></div></div>
                         <div class="step"><span class="step-num">07</span><div><h3>Save and test the connection</h3><p>Select <strong>Save connection</strong>, then run <strong>Test connection</strong>. If Delta reports that the IP is not whitelisted, reopen the key and verify both displayed server addresses were copied correctly.</p></div></div>
                         <div class="step"><span class="step-num">08</span><div><h3>Run the first Delta sync</h3><p>Open the Delta Sync Center, run a manual sync, and confirm the activity log succeeds and realized wallet transactions are imported before enabling automatic sync.</p></div></div>
-                    </div><div class="warning"><strong>Delta-specific:</strong> Delta validates the request's source IP. The required addresses are shown only inside the authenticated Delta Settings page and are intentionally not published here.</div></div>
+                        </div>
+                        <div class="warning"><strong>Delta-specific:</strong> Delta validates the request's source IP. The required addresses are shown only inside the authenticated Delta Settings page and are intentionally not published here.</div>
+                    </div>
                 </article>
             </div>
         </section>

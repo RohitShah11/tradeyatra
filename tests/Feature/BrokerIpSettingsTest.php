@@ -66,5 +66,9 @@ class BrokerIpSettingsTest extends TestCase
             "frame-src 'self' https://www.youtube-nocookie.com",
             (string) $response->headers->get('Content-Security-Policy'),
         );
+        $this->assertSame(
+            1,
+            substr_count($response->getContent(), 'https://www.youtube-nocookie.com/embed/8z0kvif4Hlc'),
+        );
     }
 }
