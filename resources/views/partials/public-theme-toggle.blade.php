@@ -68,7 +68,7 @@
     const root = document.documentElement;
     const button = document.getElementById('publicThemeToggle');
     const saved = localStorage.getItem('public-theme');
-    const initial = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    const initial = saved || 'dark';
 
     function apply(theme) {
         root.dataset.publicTheme = theme;
