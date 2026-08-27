@@ -112,6 +112,6 @@ class AdminUserController extends Controller
                 'balance' => (float) $balance,
                 'synced_at' => $log->created_at,
             ];
-        })->filter()->values()->all();
+        })->filter(fn ($balance) => $balance !== null && abs($balance['balance']) >= 0.00000001)->values()->all();
     }
 }

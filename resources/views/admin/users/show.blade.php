@@ -28,7 +28,7 @@ $presence = $activity?->presenceStatus() ?? 'offline';
 <section class="panel" style="margin-bottom:16px">
     <div class="panel-head"><div><h2>Trade history</h2><span class="muted">{{ number_format($matchingTradeCount) }} matching {{ $matchingTradeCount === 1 ? 'trade' : 'trades' }}</span></div></div>
     <div class="trade-summary">
-        <div class="trade-summary-card"><span>Account balance</span>@forelse($walletBalances as $balance)<strong>{{ $balance['currency'] }} {{ number_format($balance['balance'], 2) }}</strong><small>{{ $balance['broker'] }} · {{ $balance['synced_at']?->diffForHumans() }}</small>@empty<strong>Not available</strong><small>Balance appears after a wallet sync or saved journal balance.</small>@endforelse</div>
+        <div class="trade-summary-card"><span>Account balance</span>@forelse($walletBalances as $balance)<strong>{{ $balance['currency'] }} {{ number_format($balance['balance'], 2) }}</strong><small>{{ $balance['broker'] }} · updated {{ $balance['synced_at']?->diffForHumans() }}</small>@empty<strong>Not available</strong><small>No non-zero wallet balance was returned by the latest sync.</small>@endforelse</div>
         <div class="trade-summary-card profit"><span>Total profit</span>@forelse($tradeTotals as $total)<strong>{{ $total->currency }} {{ number_format((float) $total->total_profit, 2) }}</strong>@empty<strong>—</strong>@endforelse</div>
         <div class="trade-summary-card loss"><span>Total loss</span>@forelse($tradeTotals as $total)<strong>{{ $total->currency }} {{ number_format((float) $total->total_loss, 2) }}</strong>@empty<strong>—</strong>@endforelse</div>
     </div>

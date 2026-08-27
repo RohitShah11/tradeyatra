@@ -106,7 +106,10 @@ class AdminFlowTest extends TestCase
         ]);
         SyncLog::create([
             'user_id' => $user->id, 'shark_account_id' => $sharkAccount->id, 'status' => 'success',
-            'wallet_snapshot' => ['walletBalance' => 1425.50, 'currency' => 'USD'],
+            'wallet_snapshot' => ['result' => [
+                ['balance' => 1425.50, 'currency' => 'USD'],
+                ['balance' => 0, 'currency' => 'REF_USD'],
+            ]],
         ]);
         Trade::create([
             'user_id' => $otherUser->id, 'date' => '2026-08-21', 'pair' => 'PRIVATEPAIR',
@@ -120,6 +123,7 @@ class AdminFlowTest extends TestCase
             ->assertSee('BTCUSDT')
             ->assertSee('USD 125.00')
             ->assertSee('USD 1,425.50')
+            ->assertDontSee('REF_USD')
             ->assertSee('Total profit')
             ->assertSee('Total loss')
             ->assertSee('Page 1 of 1')
