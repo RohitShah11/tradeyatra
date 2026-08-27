@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\ContactMessage;
 use App\Models\Trade;
+use App\Models\SyncLog;
+use App\Models\SharkAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -99,6 +101,13 @@ class AdminFlowTest extends TestCase
             'trade_type' => 'Long', 'broker' => 'SharkExchange', 'profit' => 125, 'loss' => 0,
             'strategy' => 'Breakout', 'currency' => 'USD',
         ]);
+        $sharkAccount = SharkAccount::create([
+            'user_id' => $user->id, 'name' => 'Primary', 'api_key' => 'key', 'api_secret' => 'secret',
+        ]);
+        SyncLog::create([
+            'user_id' => $user->id, 'shark_account_id' => $sharkAccount->id, 'status' => 'success',
+            'wallet_snapshot' => ['walletBalance' => 1425.50, 'currency' => 'USD'],
+        ]);
         Trade::create([
             'user_id' => $otherUser->id, 'date' => '2026-08-21', 'pair' => 'PRIVATEPAIR',
             'trade_type' => 'Short', 'profit' => 50, 'loss' => 0,
@@ -110,6 +119,10 @@ class AdminFlowTest extends TestCase
             ->assertSee('Trade history')
             ->assertSee('BTCUSDT')
             ->assertSee('USD 125.00')
+            ->assertSee('USD 1,425.50')
+            ->assertSee('Total profit')
+            ->assertSee('Total loss')
+            ->assertSee('Page 1 of 1')
             ->assertDontSee('PRIVATEPAIR');
     }
 }
