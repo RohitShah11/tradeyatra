@@ -99,7 +99,7 @@ class AdminFlowTest extends TestCase
         Trade::create([
             'user_id' => $user->id, 'date' => '2026-08-20', 'pair' => 'BTCUSDT',
             'trade_type' => 'Long', 'broker' => 'SharkExchange', 'profit' => 125, 'loss' => 0,
-            'strategy' => 'Breakout', 'currency' => 'USD',
+            'strategy' => 'Breakout', 'currency' => 'USD', 'trading_fees' => 1.25,
         ]);
         $sharkAccount = SharkAccount::create([
             'user_id' => $user->id, 'name' => 'Primary', 'api_key' => 'key', 'api_secret' => 'secret',
@@ -126,6 +126,8 @@ class AdminFlowTest extends TestCase
             ->assertDontSee('REF_USD')
             ->assertSee('Total profit')
             ->assertSee('Total loss')
+            ->assertSee('Total trading fees')
+            ->assertSee('USD 1.2500')
             ->assertSee('Page 1 of 1')
             ->assertDontSee('PRIVATEPAIR');
     }

@@ -49,7 +49,7 @@ class AdminUserController extends Controller
 
         $matchingTradeCount = (clone $tradeQuery)->count();
         $tradeTotals = (clone $tradeQuery)
-            ->selectRaw("COALESCE(NULLIF(currency, ''), ?) as currency, COALESCE(SUM(profit), 0) as total_profit, COALESCE(SUM(loss), 0) as total_loss", [$user->currency ?: 'INR'])
+            ->selectRaw("COALESCE(NULLIF(currency, ''), ?) as currency, COALESCE(SUM(profit), 0) as total_profit, COALESCE(SUM(loss), 0) as total_loss, COALESCE(SUM(trading_fees), 0) as total_fees", [$user->currency ?: 'INR'])
             ->groupByRaw("COALESCE(NULLIF(currency, ''), ?)", [$user->currency ?: 'INR'])
             ->orderBy('currency')
             ->get();
