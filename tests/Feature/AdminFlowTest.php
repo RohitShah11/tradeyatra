@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Admin;
 use App\Models\ContactMessage;
+use App\Models\Trade;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -85,5 +86,30 @@ class AdminFlowTest extends TestCase
         $this->assertSame('resolved', $message->status);
         $this->assertSame($admin->id, $message->handled_by);
         $this->assertNotNull($message->handled_at);
+    }
+
+    public function test_admin_can_view_and_filter_a_users_trades(): void
+    {
+        $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 'password']);
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        Trade::create([
+            'user_id' => $user->id, 'date' => '2026-08-20', 'pair' => 'BTCUSDT',
+            'trade_type' => 'Long', 'broker' => 'SharkExchange', 'profit' => 125, 'loss' => 0,
+            'strategy' => 'Breakout', 'currency' => 'USD',
+        ]);
+        Trade::create([
+            'user_id' => $otherUser->id, 'date' => '2026-08-21', 'pair' => 'PRIVATEPAIR',
+            'trade_type' => 'Short', 'profit' => 50, 'loss' => 0,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.users.show', [$user, 'trade_search' => 'BTC']))
+            ->assertOk()
+            ->assertSee('Trade history')
+            ->assertSee('BTCUSDT')
+            ->assertSee('USD 125.00')
+            ->assertDontSee('PRIVATEPAIR');
     }
 }

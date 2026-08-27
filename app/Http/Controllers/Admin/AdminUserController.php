@@ -26,7 +26,7 @@ class AdminUserController extends Controller
         return view('admin.users.index', compact('users', 'search'));
     }
 
-    public function show(User $user): View
+    public function show(Request $request, User $user): View
     {
         $user->loadCount(['trades', 'sharkAccounts', 'syncLogs', 'aiConversations']);
         $user->load('latestActivitySession');
@@ -38,6 +38,26 @@ class AdminUserController extends Controller
         $activeToday = (int) $user->pageSessions()->where('started_at', '>=', today())->sum('active_seconds');
         $activeSevenDays = (int) $user->pageSessions()->where('started_at', '>=', now()->subDays(7))->sum('active_seconds');
 
-        return view('admin.users.show', compact('user', 'recentActivitySessions', 'pageUsage', 'activeToday', 'activeSevenDays'));
+        $tradeSearch = trim((string) $request->query('trade_search'));
+        $tradeBroker = trim((string) $request->query('trade_broker'));
+        $tradeQuery = $user->trades()
+            ->when($tradeSearch, fn ($query) => $query->where(fn ($inner) => $inner
+                ->where('pair', 'like', "%{$tradeSearch}%")
+                ->orWhere('strategy', 'like', "%{$tradeSearch}%")))
+            ->when($tradeBroker, fn ($query) => $query->where('broker', $tradeBroker));
+
+        $matchingTradeCount = (clone $tradeQuery)->count();
+        $trades = (clone $tradeQuery)
+            ->latest('date')
+            ->latest('time')
+            ->paginate(20, ['*'], 'trades_page')
+            ->withQueryString();
+        $tradeBrokers = $user->trades()->whereNotNull('broker')->where('broker', '!=', '')
+            ->distinct()->orderBy('broker')->pluck('broker');
+
+        return view('admin.users.show', compact(
+            'user', 'recentActivitySessions', 'pageUsage', 'activeToday', 'activeSevenDays',
+            'trades', 'matchingTradeCount', 'tradeSearch', 'tradeBroker', 'tradeBrokers'
+        ));
     }
 }

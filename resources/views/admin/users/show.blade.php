@@ -25,6 +25,24 @@ $presence = $activity?->presenceStatus() ?? 'offline';
 
 <div class="grid stats" style="margin-top:16px"><div class="stat"><span>Active today</span><strong>{{ $duration($activeToday) }}</strong></div><div class="stat"><span>Active last 7 days</span><strong>{{ $duration($activeSevenDays) }}</strong></div><div class="stat"><span>Trades</span><strong>{{ number_format($user->trades_count) }}</strong></div><div class="stat"><span>AI conversations</span><strong>{{ number_format($user->ai_conversations_count) }}</strong></div></div>
 
+<section class="panel" style="margin-bottom:16px">
+    <div class="panel-head"><div><h2>Trade history</h2><span class="muted">{{ number_format($matchingTradeCount) }} matching {{ $matchingTradeCount === 1 ? 'trade' : 'trades' }}</span></div></div>
+    <div class="panel-body" style="padding-bottom:2px">
+        <form class="filters" method="GET" action="{{ route('admin.users.show', $user) }}">
+            <label class="field"><span class="sr-only">Search trades</span><input class="input" type="search" name="trade_search" value="{{ $tradeSearch }}" placeholder="Pair or strategy"></label>
+            <label class="field"><span class="sr-only">Filter by broker</span><select class="input" name="trade_broker"><option value="">All brokers</option>@foreach($tradeBrokers as $broker)<option value="{{ $broker }}" @selected($tradeBroker === $broker)>{{ $broker }}</option>@endforeach</select></label>
+            <button class="btn" type="submit">Filter trades</button>
+            @if($tradeSearch || $tradeBroker)<a class="btn secondary" href="{{ route('admin.users.show', $user) }}">Clear</a>@endif
+        </form>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Market</th><th>Broker</th><th>Side</th><th>Entry / exit</th><th>Quantity</th><th>Net P&amp;L</th><th>Source</th></tr></thead><tbody>
+        @forelse($trades as $trade)
+            <tr><td><strong>{{ $trade->date?->format('d M Y') }}</strong><br><span class="muted">{{ $trade->time ? \Illuminate\Support\Carbon::parse($trade->time)->format('h:i A') : '—' }}</span></td><td><strong>{{ $trade->pair }}</strong><br><span class="muted">{{ $trade->strategy ?: ($trade->status ?: '—') }}</span></td><td>{{ $trade->broker ?: ($trade->exchange ?: 'Manual') }}</td><td><span class="badge">{{ $trade->trade_type ?: '—' }}</span></td><td>{{ is_null($trade->entry_price) ? '—' : number_format((float) $trade->entry_price, 4) }} / {{ is_null($trade->exit_price) ? '—' : number_format((float) $trade->exit_price, 4) }}</td><td>{{ $trade->quantity ?? $trade->lot_size ?? '—' }}</td><td style="color:{{ $trade->net_pnl >= 0 ? '#86efac' : '#fda4af' }}">{{ $trade->currency ?: $user->currency }} {{ number_format($trade->net_pnl, 2) }}</td><td>{{ $trade->imported_at ? 'Imported' : 'Manual' }}</td></tr>
+        @empty<tr><td class="empty" colspan="8">No trades match this view.</td></tr>@endforelse
+    </tbody></table></div>
+    @if($trades->hasPages())<div class="pagination">{{ $trades->links() }}</div>@endif
+</section>
+
 <div class="grid usage-layout">
     <section class="panel"><div class="panel-head"><h2>Page time · Last 30 days</h2></div><div class="table-wrap"><table><thead><tr><th>Page</th><th>Visits</th><th>Active time</th></tr></thead><tbody>@forelse($pageUsage as $page)<tr><td>{{ $page->path }}</td><td>{{ number_format($page->visits) }}</td><td>{{ $duration((int) $page->active_seconds) }}</td></tr>@empty<tr><td class="empty" colspan="3">No activity recorded yet.</td></tr>@endforelse</tbody></table></div></section>
     <section class="panel"><div class="panel-head"><h2>Recent sessions</h2></div><div class="table-wrap"><table><thead><tr><th>Started</th><th>Active</th><th>Last seen</th></tr></thead><tbody>@forelse($recentActivitySessions as $session)<tr><td>{{ $session->started_at->format('d M, h:i A') }}</td><td>{{ $duration($session->active_seconds) }}</td><td>{{ $session->last_seen_at->diffForHumans() }}</td></tr>@empty<tr><td class="empty" colspan="3">No sessions recorded yet.</td></tr>@endforelse</tbody></table></div></section>
